@@ -24,6 +24,7 @@ class KalmanFilter():
         self.H = np.zeros((self.meas_size,self.state_size))
         self.H[0,0]= 1.0
         self.reset()
+
     def cycle(self):
         self.computeGain()
         self.update()
@@ -65,7 +66,6 @@ class KalmanFilter():
         # Extapolate state and covariance:
         self.x_old = np.dot(self.Phi,self.x_new)
         self.P_old  = np.dot(self.Phi,np.dot(self.P_new,self.Phi.transpose())) + self.Q
-
         self.k=self.k+1
 
     def reset(self):
