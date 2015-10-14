@@ -16,6 +16,7 @@ class KalmanStateTransMatrix():
                 [0,0,rho_m]],\
                float)
         else:
+            print('Using default STM')
             self.Phi = np.zeros((state_size,state_size))
             i=0
             while i<state_size:

@@ -5,7 +5,7 @@ import process_noise as pn
 import numpy as np
 
 class KalmanFilter():
-    def __init__(self,meas_func=None,T=1,tau_factor=10,state_size=3,meas_size=1):
+    def __init__(self,meas_func=None,T=1,tau_factor=10,state_size=3,meas_size=1,sigma=0.1):
         if meas_func==None:
             self.meas_func = self.test_meas_func
         else:
@@ -14,12 +14,13 @@ class KalmanFilter():
         self.tau_factor = tau_factor
         self.state_size = state_size
         self.meas_size = meas_size
+        self.sigma = sigma
         self.I = np.eye(self.state_size)
         self.Phi  = kstm.KalmanStateTransMatrix(self.T,self.tau_factor,self.state_size).Phi
         # Create contstant Kalman process noise
         self.Q  = pn.ProcessNoise(T,tau_factor,self.state_size).Q
         # Constant measurement noise covariance matrix
-        self.R = cov.Covariance(self.meas_size).Cov
+        self.R = cov.Covariance(size=self.meas_size,sigma1=self.sigma).Cov
         # Measurement matrix:  Only price measurement
         self.H = np.zeros((self.meas_size,self.state_size))
         self.H[0,0]= 1.0
@@ -39,6 +40,17 @@ class KalmanFilter():
         print('Residual:\n',self.residual)
         print('New State:\n',self.x_new)
         print('New Cov:\n', self.P_new)
+    def run(self,numruns):
+        i=0
+        rsum=0
+        while i<numruns:
+            self.display()
+            self.cycle()
+            i=i+1
+            rsum = rsum + self.residual[0]
+        avg = rsum/numruns
+        print('Rsum: ',rsum)
+        print('Avg residual: ',avg)
         
     def computeGain(self):
         S = np.dot(self.H,np.dot(self.P_old,self.H.transpose()))+self.R
@@ -58,7 +70,10 @@ class KalmanFilter():
             self.z = tmp_z
         else:
             self.z = meas_tmp
-        self.zhat = np.dot(self.H,self.x_old)
+        if self.k==0:
+            self.zhat = self.z
+        else:
+            self.zhat = np.dot(self.H,self.x_old)
         self.residual = self.z - self.zhat
         self.x_new = self.x_old + np.dot(self.K,self.residual)
         
@@ -72,7 +87,7 @@ class KalmanFilter():
         self.P_old = cov.Covariance(size=self.state_size,sigma1=1.0,sigma2=0.1,sigma3=0.01).Cov
         self.P_new = cov.Covariance(self.state_size,1.0,0.1,0.01).Cov
         self.x_old = np.zeros((self.state_size,1))
-        self.x_old[1] = .1
+        self.x_old[1] = 0
         self.x_new = np.zeros((self.state_size,1))
         self.K = np.zeros((self.state_size,self.meas_size))
         self.z = np.zeros((self.meas_size,1))
