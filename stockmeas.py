@@ -1,9 +1,11 @@
 import numpy as np
+import random
 import csv
 import datetime as dt
 class StockMeasurement():
-    def __init__(self,infile='GE-2000-Aug-1_to_2015-September-04.csv'):
+    def __init__(self,noiseSigma=0,infile='GE-2000-Aug-1_to_2015-September-04.csv'):
         i=0
+        self.noiseSigma = noiseSigma
         self.oprice = []
         self.cprice = []
         self.dates=[]
@@ -40,10 +42,15 @@ class StockMeasurement():
     def nextMeas(self):
         self.index = self.index+1
         self.meas_array[(0,0)]=self.oprice[self.index]
-        return self.meas_array
+        return self.meas_array + random.gauss(0,self.noiseSigma)
 
     def reset(self):
         self.index = -1
+
+    def setNoise(self, sigma=0):
+        self.noiseSigma = sigma
+
+
 
 
 

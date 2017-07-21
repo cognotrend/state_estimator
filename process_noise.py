@@ -1,8 +1,8 @@
 import numpy as np
 import math
 class ProcessNoise():
-    def __init__(self,T=1,tau_factor=10,state_size=3,Q0=[1]):
-        if state_size==3:
+    def __init__(self,T=1,tau_factor=10,state_size=3,Q0=[1],phi_type=0):
+        if phi_type==0 and state_size==3:
             self.T = T
             Tau_m = tau_factor*self.T  # for price measurement only
             T=self.T

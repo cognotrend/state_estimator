@@ -2,10 +2,10 @@
 import numpy as np
 import math
 class KalmanStateTransMatrix():
-    def __init__(self,T=1,tau_factor=10,state_size=3):
+    def __init__(self,T=1,tau_factor=10,state_size=3,phi_type=0):
 
 # Kalman state transition matrix
-        if state_size==3:
+        if phi_type==0 and state_size==3:
             tau_m = tau_factor*T  # for price measurement only
             beta = 1/tau_m
             beta_squared = math.pow(beta,2)
@@ -22,10 +22,15 @@ class KalmanStateTransMatrix():
             while i<state_size:
                 j=0
                 while j<state_size:
-                    if j>=i:
+                    if i==0:
                         self.Phi[(i,j)] = math.pow(T,j)/math.factorial(j)
-                    j=j+1
-                i=i+1
+                    else:
+                        if j<i:
+                            self.Phi[(i,j)]=0
+                        else:
+                            self.Phi[(i,j)] = self.Phi[(i-1,j-1)]
+                    j += 1
+                i += 1
 
 
                     
