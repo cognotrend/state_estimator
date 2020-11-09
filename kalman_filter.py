@@ -8,7 +8,8 @@ import math
 
 default_numruns=5
 default_q_factor=0.0001
-default_meas_noise_sigma=0.1
+default_meas_noise_sigma=1
+default_logmode = 0
 class KalmanFilter():
     '''
     The KalmanFilter class implements a Kalman Filter, by default of order 3
@@ -24,38 +25,55 @@ class KalmanFilter():
     conditions for the next iteration to be reset.
     Add a ground truth simulator mode:  by revering ground truth out of measurments or
     Generating measurements from ground truth
+    Add module to read alphavantage csv files with pandas.
     '''
 
-    def __init__(self,meas_func=None,T=1,tau_factor=10,state_size=3,meas_size=1,
+    def __init__(self,
+                 meas_func=None,T=1,
+                 tau_factor=10,
+                 state_size=3,
+                 meas_size=1,
                  sigma=default_meas_noise_sigma,
                  num_blocks=1, # for ensemble of filters
-                 phi_type=0,ref_model=1, num_runs=default_numruns):
+                 phi_type=0,ref_model=1, 
+                 logmode=default_logmode,
+                 num_runs=default_numruns
+                 ):
         '''
         KalmanFilter object constructor
         '''
-        if meas_func==None:
-            self.meas_func = self.test_meas_func
-        else:
-            self.meas_func = meas_func
+        self.logmode = logmode
         self.numruns = num_runs
+
+# Set up ProcessModel (should be object):
         self.T = T
         self.phi_type = phi_type
         self.tau_factor = tau_factor
         self.state_size = state_size
+        
+        # Create State Transition Matrix  (should be subtask under ProcessModel)
         self.Phi  = kstm.KalmanStateTransMatrix(T=self.T,tau_factor=self.tau_factor,state_size=self.state_size,phi_type=self.phi_type).Phi
 
+# Set up MeasurementModel (should be distinct class of objects):
+        if meas_func==None:
+            self.meas_func = self.test_meas_func
+        else:
+            self.meas_func = meas_func
         self.meas_size = meas_size
         self.sigma = sigma
         self.num_blocks = num_blocks
         self.ref_model = ref_model
-        self.H = np.zeros((self.meas_size,self.state_size))
         if self.num_blocks>1:
             self.Phi = np.kron(self.Phi,np.eye(self.num_blocks))
             self.state_size = self.state_size*self.num_blocks
-            self.meas_size = self.num_blocks
-            self.H = np.zeros(1,self.state_size)
+            self.meas_size = self.num_blocks # Assumes one scalar meas per block
+#            self.H = np.zeros((1,self.state_size))
            # i=j=k=0
 #            while i<self.state_size
+        self.H = np.zeros((self.meas_size,self.state_size))
+        self.K = np.zeros((self.state_size,self.meas_size,self.numruns))
+        self.z = np.zeros((self.meas_size,self.numruns))
+        self.zhat = np.zeros((self.meas_size,self.numruns))
 
         self.I = np.eye(self.state_size)
         # Create contstant Kalman process noise
@@ -73,20 +91,20 @@ class KalmanFilter():
 
     def reset(self):
         self.P_minus = cov.Covariance(size=self.state_size,sigma1=1.0,
-                                    sigma2=0.1,sigma3=0.01,
+                                    sigma2=0.2,sigma3=0.04,
                                     msg='Initial P_minus covariance matrix.').Cov
         self.P_minus_cum = np.zeros((self.state_size,self.state_size,self.numruns))
         self.P_minus_cum[:,:,0] = self.P_minus
-        self.P_plus = cov.Covariance(self.state_size,1.0,0.1,0.01,msg='Initial P_plus covariance matrix.').Cov
+        self.P_plus = cov.Covariance(self.state_size,1.0,0.2,0.04,msg='Initial P_plus covariance matrix.').Cov
         self.P_plus_cum = np.zeros((self.state_size,self.state_size,self.numruns))
         self.P_plus_cum[:,:,0] = self.P_plus
         self.x_minus = np.zeros((self.state_size,self.numruns))
         self.x_plus = np.zeros((self.state_size,self.numruns))
         meas_tmp = self.meas_func()
         if meas_tmp.size ==1:
-            tmp_z = np.zeros((self.meas_size,1))
-            tmp_z[0]=meas_tmp
-            self.x_plus[0,0] = tmp_z
+#            tmp_z = np.zeros((self.meas_size,1))
+#            tmp_z[0]=meas_tmp
+            self.x_plus[0,0] = meas_tmp[0,0]
         else:
             self.x_plus[:,0] = meas_tmp
 
@@ -150,7 +168,7 @@ class KalmanFilter():
         if meas_tmp.size ==1:
             tmp_z = np.zeros((self.meas_size,1))
             tmp_z[0]=meas_tmp
-            self.z[:,self.k] = tmp_z
+            self.z[:,self.k] = meas_tmp[0,0]
         else:
             self.z[:,self.k] = meas_tmp
         self.zhat[:,self.k] = np.dot(self.H,self.x_minus[:,self.k])
@@ -181,8 +199,8 @@ class KalmanFilter():
             print('Prior Cov:\n', self.P_minus)
             print('Kalman Gain:\n',self.K[:,:,self.k])
             print('Measurement:\n',self.z[:,self.k])
-            print('Pre-fit Residual:\n',self.residual[:,self.k])
-            print('Exponential of Residual:\n',np.exp(self.residual[:,self.k]))
+            if self.logmode==1:
+                print('Exponential of Residual:\n',np.exp(self.residual[:,self.k]))
             if self.x_minus[0,self.k] != 0.0:
                 print('Residual as percent of State:\n',(self.residual[:,self.k]/self.x_minus[0,self.k])*100,'%')
             print('Posterior State:\n',self.x_plus[:,self.k])
