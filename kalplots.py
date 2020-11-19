@@ -72,7 +72,7 @@ def plot_residuals(kfobj,fignum=2, expflag=0, title_prefix=''):
     if expflag==1:
         data1 = np.exp(data1)
         data2 = np.exp(data2)
-        data3 = np.exp(data3)
+        data3 = kfobj.exp_residual
         suffix = ' (Exp)'
     plt.figure(fignum)
     epochs=list(range(0,kfobj.numruns))
@@ -88,7 +88,7 @@ def plot_residuals(kfobj,fignum=2, expflag=0, title_prefix=''):
     plt.subplot(3,1,2)
     plt.plot(epochs[1:kfobj.numruns],data3.reshape((kfobj.numruns))[1:kfobj.numruns])
     plt.xlabel('Epochs')
-    plt.title(title_prefix+'Residuals'+suffix,fontsize=10)    
+    plt.title(title_prefix+'Residuals of Exponentials'+suffix,fontsize=10)    
 
 #    ax1=plt.subplot(3,1,2,sharex=ax2)
 #    plt.setp(ax1.get_xticklabels(), visible=False)

@@ -5,9 +5,11 @@ import kstm
 import process_noise as pn
 import numpy as np
 import math
+import datetime
+
 
 default_numruns=5
-default_q_factor=0.0000001
+default_q_factor=0.0001
 default_meas_noise_sigma=1
 default_logmode = 0
 class KalmanFilter():
@@ -30,7 +32,9 @@ class KalmanFilter():
     '''
 
     def __init__(self,
-                 meas_func=None,dt=1,
+                 meas_obj=None,
+                 meas_func=None,
+                 dt=1,
                  tau_factor=10,
                  state_size=3,
                  meas_size=1,
@@ -48,19 +52,21 @@ class KalmanFilter():
         self.numruns = num_runs
         self.displayflag = displayflag
 
-# Set up ProcessModel (should be object):
+# Set up ProcessModeself.Ql (should be object):
         self.dt = dt
         self.phi_type = phi_type
         self.tau_factor = tau_factor
         self.state_size = state_size
         
         # Create State Transition Matrix  (should be subtask under ProcessModel)
-        self.Phi  = kstm.KalmanStateTransMatrix(dt=self.dt,
+        self.kstmobj = kstm.KalmanStateTransMatrix(dt=self.dt,
                                                 tau_factor=self.tau_factor,
                                                 state_size=self.state_size,
-                                                phi_type=self.phi_type).Phi
+                                                phi_type=self.phi_type)
+        self.Phi  = self.kstmobj.Phi
 
 # Set up MeasurementModel (should be distinct class of objects):
+        self.meas_obj = meas_obj
         if meas_func==None:
             self.meas_func = self.test_meas_func
         else:
@@ -81,10 +87,12 @@ class KalmanFilter():
 
         self.I = np.eye(self.state_size)
         # Create contstant Kalman process noise
-        self.Q  = pn.ProcessNoise(dt=self.dt,tau_factor=self.tau_factor,
+        self.pnobj  = pn.ProcessNoise(dt=self.dt,tau_factor=self.tau_factor,
                                   state_size=self.state_size,
                                   phi_type=self.phi_type,
-                                  q_factor=default_q_factor).Q
+                                  q_factor=default_q_factor)
+        self.Q = self.pnobj.Q
+        self.Alt_Q = self.pnobj.Alt_Q
 
 # Set up Measurement Model
         # Constant measurement noise covariance matrix
@@ -132,7 +140,7 @@ class KalmanFilter():
         self.meas_array = np.random.randn(1,self.numruns)  # Scalar meas.
         self.k = 0
         self.posgains=[]
-
+        self.Q
     def setNumRuns(self,numruns=default_numruns):
         old_numruns = self.numruns
         self.numruns=numruns
@@ -168,6 +176,12 @@ class KalmanFilter():
         # Extapolate state and covariance:
 
         self.k = self.k+1
+        if self.meas_obj.dates[self.k]-self.meas_obj.dates[self.k-1]>datetime.timedelta(1):
+            self.Phi = self.kstmobj.Alt_Phi
+            self.Q = self.pnobj.Alt_Q
+        else:
+            self.Phi = self.kstmobj.Phi
+            self.Q   = self.pnobj.Q
         self.x_minus[:,self.k] = np.dot(self.Phi,self.x_plus[:,self.k-1])
         self.P_minus  = np.dot(self.Phi,np.dot(self.P_plus,self.Phi.transpose())) + self.Q
         self.P_minus_cum[:,:,self.k] = self.P_minus

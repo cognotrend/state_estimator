@@ -9,6 +9,7 @@ Yalcin Bulut, D. Vines-Cavanaugh, Dionisio Bernal, 2010
 class ProcessNoise():
     def __init__(self,dt=1,tau_factor=1,state_size=3,Q0=[1],phi_type=0,q_factor=1):
         self.dt = dt
+        self.alt_dt = 3*self.dt
         Tau_m = tau_factor*self.dt  # for price measurement only
         if phi_type==0 and state_size==3:
             beta = 1/Tau_m
@@ -38,6 +39,7 @@ class ProcessNoise():
             self.q33 = (1/(2*beta))*(1 - math.exp(-2*beta*self.dt))
             self.Q1 = np.array([[self.q11, self.q12, self.q13],[self.q12,self.q22,self.q23],[self.q13, self.q23, self.q33]],float)
             self.Q  = (2*math.pow(self.sigma_m,2)/Tau_m)*self.Q1
+            self.Alt_Q = self.Q  # temporary
         elif Q0==[1] and state_size==3:  #Standard "Newton/Taylor" process noise
             self.Q = np.eye(state_size)  #See Grewal & Andrews pg. 147
             self.Q[0,0]=math.pow(self.dt,5)/20
@@ -52,6 +54,20 @@ class ProcessNoise():
             self.Q[2,1]=math.pow(self.dt,2)/2
             self.Q[2,2]=self.dt
             self.Q = q_factor*self.Q
+
+            self.Alt_Q = np.eye(state_size)  #See Grewal & Andrews pg. 147
+            self.Alt_Q[0,0]=math.pow(self.alt_dt,5)/20
+            self.Alt_Q[0,1]=math.pow(self.alt_dt,4)/8
+            self.Alt_Q[0,2]=math.pow(self.alt_dt,3)/6
+
+            self.Alt_Q[1,0]=math.pow(self.alt_dt,4)/8
+            self.Alt_Q[1,1]=math.pow(self.alt_dt,3)/3
+            self.Alt_Q[1,2]=math.pow(self.alt_dt,2)/2
+
+            self.Alt_Q[2,0]=math.pow(self.alt_dt,3)/6
+            self.Alt_Q[2,1]=math.pow(self.alt_dt,2)/2
+            self.Alt_Q[2,2]=self.alt_dt
+            self.Alt_Q = q_factor*self.Alt_Q
         else:
             self.Q = Q0
 
