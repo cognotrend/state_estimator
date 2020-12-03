@@ -7,7 +7,8 @@ import pandas as pd
 1)  "Lognormal Model for Stock Prices", Michael J. Sharpe, UCD Math Dept, 
     http://www.math.ucsd.edu/~msharpe/stockgrowth.pdf
 TODO:
-    1) Add processing of multiple stocks
+    1) Add processing of multiple stocks if num stocks >1
+    2) Ensure default of a single direct measurement if num stocks =1
 '''
 class StockMeasurement():
     def __init__(self,
