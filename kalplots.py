@@ -104,15 +104,15 @@ def plot_residuals(kfobj,fignum=2, expflag=0, title_prefix=''):
     plt.hist(np.exp(np.transpose(kfobj.residual)),bins=100)
     plt.title('Exponential of Residuals')
     plt.subplot(3,1,3)
-    plt.hist(np.transpose(kfobj.exp_residual),bins=100)
     mu=np.mean(np.transpose(kfobj.exp_residual))
     mu=round(mu,2)
     sigma=np.std(np.transpose(kfobj.exp_residual))
     sigma=round(sigma,2)
-    plt.text(mu-6*sigma, kfobj.numruns**(1/2), r'$\mu='+str(mu)+' ,\ \sigma='+str(sigma)+'$')
+    plt.hist(np.transpose(kfobj.exp_residual),bins=100,label=r'$\mu$=' + str(mu)+ ', $\sigma$='+str(sigma))
+    plt.legend()
     plt.title('Residuals of Exponentials')
     plt.show()
-    
+
 
 def plot_posgains(kfobj,fignum=3, expflag=0):
     plt.figure(fignum)
@@ -122,4 +122,12 @@ def plot_posgains(kfobj,fignum=3, expflag=0):
     plt.plot(data)
     plt.title('Positive Gains')
     
+def plot_gains(kfobj,state=0,fignum=4):
+    gains = kfobj.K[state,:]
+    epochs=list(range(0,kfobj.numruns))
+    plt.figure(fignum)
+    
+    plt.plot(epochs[1:kfobj.numruns],gains.reshape((kfobj.numruns))[1:kfobj.numruns],
+             label='Gain for state 1')
+
     

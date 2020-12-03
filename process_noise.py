@@ -70,4 +70,5 @@ class ProcessNoise():
             self.Alt_Q = q_factor*self.Alt_Q
         else:
             self.Q = Q0
+            self.Alt_Q = Q0
 

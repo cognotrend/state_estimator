@@ -4,7 +4,13 @@ class Covariance():
     '''
     The Covariance class implements a covariance matrix as a diagonal matrix of positive values
     '''
-    def __init__(self, size=3, sigma1=0.05, sigma2=0.2, sigma3=0.04, rflag=0, msg = ''):
+    def __init__(self, 
+                 size=3, 
+                 sigma1=0.001, 
+                 sigma2=0.2, 
+                 sigma3=0.4, 
+                 rflag=0, 
+                 msg = ''):
         '''
         Constructor for Covariance class.  Declare object as follows:
         myObject = covariance.Covariance()
@@ -28,9 +34,11 @@ class Covariance():
         self.size = size
         print(self.__doc__)
         print('\t\tImplementing: ',msg)
+
     def test(self):
         print(self.Cov)
         print(np.linalg.eig(self.Cov))
+
     def randomize(self):
         n=self.size
         X=np.random.rand(n,n)
