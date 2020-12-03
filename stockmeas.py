@@ -6,6 +6,8 @@ import pandas as pd
 ''' Resources:
 1)  "Lognormal Model for Stock Prices", Michael J. Sharpe, UCD Math Dept, 
     http://www.math.ucsd.edu/~msharpe/stockgrowth.pdf
+TODO:
+    1) Add processing of multiple stocks
 '''
 class StockMeasurement():
     def __init__(self,
