@@ -123,7 +123,7 @@ def plot_posgains(kfobj,fignum=3, expflag=0):
     plt.title('Positive Gains')
     
 def plot_gains(kfobj,state=0,fignum=4):
-    gains = kfobj.K[state,1:].reshape((kfobj.numruns,))
+    gains = kfobj.K_cum[state,state,:].reshape((kfobj.numruns,))
     epochs=np.arange(kfobj.numruns)
     plt.figure(fignum)
     

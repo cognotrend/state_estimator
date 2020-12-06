@@ -47,7 +47,7 @@ def H_diff(num_devices,ref_device,num_states_per_device=3):
         P[i,:] = std_unit_rowvec(index=j,size=numcols)
         j=j+num_states_per_device
     H = Hr@P        
-    print(P)
+#    print(P)
     return H
 
     
