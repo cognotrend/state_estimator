@@ -20,72 +20,45 @@ class StockMeasurement():
         
         self.logmode = logmode
         self.noiseSigma = noiseSigma
-        self.dates=[]
-        self.oprice=[]
-        self.cprice=[]
-        self.num_records=[]
-        d_parser = lambda x: pd.datetime.strptime(x,'%Y-%m-%d')
+        d_parser = lambda x: dt.datetime.fromisoformat(x)
         
-#        colmap = {'Open':1,'High':2,'Low':3,'Close':4,'Volume':5}
-#        colindx = 1
-        for stock_file in infiles:            
-#            df = pd.read_csv(stock_file, parse_dates=['timestamp'], date_parser=d_parser)
-#            df.head()
-            i=0
-            oprice = []
-            cprice = []
-            dates=[]
-            with open(stock_file, newline='') as csvfile:
-            #with open('test.csv', newline='') as csvfile:
-                csvreader = csv.reader(csvfile, delimiter=',')
-                for row in csvreader:
-                        if i>0:
-                            mdy = row[0].split('/')
-                            mon=int(mdy[0])
-                            day=int(mdy[1])
-                            year = int(mdy[2])+2000
-                            dates.append(dt.date(year,mon,day))
-                            oprice.append(row[1])
-                            cprice.append(row[4])
-                        i=i+1
-    
-            print('Finished reading measurements from: '+stock_file)
-            csvfile.close
-    
-            dates.reverse()
-
-#            base_date = dates[0].split('/')
-#            base_mon  = int(base_date[0])
-#            base_day  = int(base_date[1])
-#            base_year = int(base_date[2])+2000
-#            start_date = dt.date(base_year,base_mon,base_day)
-    
-            oprice.reverse()
-            cprice.reverse()
-            self.dates=dates
-            self.oprice.append(oprice)
-            self.cprice.append(cprice)
-            self.num_records.append(len(dates))
+        self.dfs = []
+        for stock_file in infiles:
+            df = pd.read_csv(stock_file, 
+                             index_col='timestamp', 
+                             parse_dates=['timestamp'],
+                             date_parser=d_parser)
+            # Reverse data coming from Alpha Vantage
+            df = df[::-1]
+            self.dfs.append(df)
             
-        self.index = -1
+        self.timestamps = self.dfs[0].index
+        
+        self.myiter = iter(self.timestamps)
+            
         self.meas_func = self.nextMeas
         self.meas_array = np.zeros((self.num_stocks-1,1))
-        self.min_rec_num = min(self.num_records)
+#        self.min_rec_num = min(self.num_records)
 
     def nextMeas(self):
-        self.index = self.index+1
-        j=1   # Note:  Hard-coded reference stock 0
-        while j<self.num_stocks:
+        next_tstamp = next(self.myiter)
+        if self.logmode==1:
+            # hard coded for ref=0
+            ref_meas = np.log(self.dfs[0].loc[next_tstamp]['open'])
+        else:
+            ref_meas = self.dfs[0].loc[next_tstamp]['open']
+        for i in list(range(0,self.num_stocks-1)):
             if self.logmode==1:
-                p1 = np.log(float(self.oprice[j][self.index]))
-                p2 = np.log(float(self.oprice[0][self.index]))
+                self.meas_array[i]= np.log(self.dfs[i+1].loc[next_tstamp]['open']) - ref_meas
             else:
-                p1 = float(self.oprice[j][self.index])
-                p2 = float(self.oprice[0][self.index])
-            self.meas_array[j-1,0]=p1-p2
-            j=j+1
-        noise_array = np.random.normal(0,self.noiseSigma,(self.num_stocks-1,self.min_rec_num))
-        return self.meas_array + noise_array[:,self.index]
+                self.meas_array[i]= self.dfs[i+1].loc[next_tstamp]['open'] - ref_meas
+        noise_array = np.random.normal(0,self.noiseSigma,(self.num_stocks-1,1))
+        print('meas_array shape: '+str(self.meas_array.shape))
+        print('noise_array shape: '+ str(noise_array.shape))
+        meas = self.meas_array[:,0] + noise_array[:,0]
+        meas = meas.reshape((self.num_stocks-1,1))
+        print('meas shape: '+str(meas.shape))
+        return meas
     
     def reset(self):
         self.index = -1

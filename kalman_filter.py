@@ -28,7 +28,7 @@ class KalmanFilter():
     conditions for the next iteration to be reset.
     Add a ground truth simulator mode:  by revering ground truth out of measurments or
     Generating measurements from ground truth
-    Add module to read alphavantage csv files with pandas.
+    Add module to read alphavantage csv files with pandas.  Done.
     To do 2020-11-09:  Integrate block measurements with block state (ensemble)
     x is nx1, w is nx1, Phi is nxn, z is num_blocks-1x1, v is num_blocks-1xn,
     H is num_blocksxn,  P is nxn, Q is nxn, R is num_blocks-1 x num_blocksxn
@@ -104,10 +104,6 @@ class KalmanFilter():
             self.Alt_Phi = self.Basic_Alt_Phi
             self.Q   = self.Basic_Q
             self.Alt_Q = self.Basic_Alt_Q
-#            self.meas_size = self.num_blocks # Assumes one scalar meas per block
-#            self.H = np.zeros((1,self.state_size))
-           # i=j=k=0
-#            while i<self.state_size
 
 
 # Set up Measurement Model
@@ -165,7 +161,11 @@ class KalmanFilter():
 #            tmp_z[0]=meas_tmp
             self.x_plus[0,0] = meas_tmp[0,0]+np.random.normal(0,self.sigma)
         else:
-            self.x_plus[:,0] = meas_tmp[0,0]+np.random.normal(0,self.sigma)
+            if self.num_blocks>1:
+                meas_block = np.kron(np.eye(self.num_blocks),meas_tmp[0,0])+np.random.normal(0,self.sigma)
+                self.x_plus[:,0] = meas_block.reshape(((self.num_blocks-1)*self.basic_state_size,))
+            else:
+                self.x_plus[0,0] = meas_tmp[0,0]
 
         self.K = np.zeros((self.state_size,self.meas_size,self.numruns))
         self.z = np.zeros((self.meas_size,self.numruns))
@@ -211,7 +211,7 @@ class KalmanFilter():
         # Extapolate state and covariance:
 
         self.k = self.k+1
-        if self.meas_obj.dates[self.k]-self.meas_obj.dates[self.k-1]>datetime.timedelta(1):
+        if self.meas_obj.timestamps[self.k]-self.meas_obj.timestamps[self.k-1]>datetime.timedelta(1):
             TempPhi = self.Alt_Phi
             TempQ = self.Alt_Q
         else:
@@ -228,6 +228,8 @@ class KalmanFilter():
 # Covariance Extrapoloation:
 #        self.P_minus = np.dot(self.Phi,np.dot(self.P_plus,self.Phi.transpose())) + self.Q
         self.P_minus = TempPhi @ self.P_plus @ TempPhi.transpose() + TempQ
+# Kludge:  rescaling:
+        self.P_minus = 0.8*self.P_minus
         if self.verbose:
             print('Cov Extrap:')
             print(self.P_minus)
@@ -263,12 +265,8 @@ class KalmanFilter():
         if self.verbose:
             print('Update: Pos Definite? '+str(ku.is_pos_def(self.P_plus)))
         meas_tmp = self.meas_func()
-        if meas_tmp.size==1:
-            tmp_z = np.zeros((self.meas_size,1))
-            tmp_z[0]=meas_tmp
-            self.z[:,self.k] = meas_tmp[0,0]
-        else:
-            self.z[:,self.k] = meas_tmp
+#        print('meas_tmp shape: ' + str(meas_tmp.shape))
+        self.z[:,self.k] = meas_tmp.reshape((self.num_blocks-1,))
         self.zhat[:,self.k] = np.dot(self.H,self.x_minus[:,self.k])
         self.residual[:,self.k] = self.z[:,self.k] - self.zhat[:,self.k]
         self.exp_residual[:,self.k] = np.exp(self.z[:,self.k]) - np.exp(self.zhat[:,self.k])

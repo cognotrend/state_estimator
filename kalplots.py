@@ -65,14 +65,14 @@ def std_sawtooth_plot(kfobj,fignum=1,expflag=0,last_percent=0.10,
     plt.show()
 
 def plot_residuals(kfobj,fignum=2, expflag=0, title_prefix=''):
-    data1 = kfobj.zhat
-    data2 = kfobj.z
-    data3 = kfobj.residual
+    data1 = kfobj.zhat[:,1:]
+    data2 = kfobj.z[:,1:]
+    data3 = kfobj.residual[:,1:]
     suffix=''
     if expflag==1:
         data1 = np.exp(data1)
         data2 = np.exp(data2)
-        data3 = kfobj.exp_residual
+        data3 = kfobj.exp_residual[:,1:]
         suffix = ' (Exp)'
     plt.figure(fignum)
     epochs=list(range(0,kfobj.numruns))
@@ -80,13 +80,13 @@ def plot_residuals(kfobj,fignum=2, expflag=0, title_prefix=''):
 
     ax0=plt.subplot(3,1,1)
     plt.setp(ax0.get_xticklabels(), visible=False)
-    plt.plot(epochs[1:kfobj.numruns],data1.reshape((kfobj.numruns,))[1:kfobj.numruns],
-             epochs[1:kfobj.numruns],data2.reshape((kfobj.numruns,))[1:kfobj.numruns])
+    plt.plot(epochs[1:kfobj.numruns],data1[1:kfobj.numruns].transpose(),
+             epochs[1:kfobj.numruns],data2[1:kfobj.numruns].transpose())
     plt.legend(['Predicted','Actual'])
     plt.title(title_prefix+'Predicted Measurements'+suffix,fontsize=10)
 
     plt.subplot(3,1,2)
-    plt.plot(epochs[1:kfobj.numruns],data3.reshape((kfobj.numruns))[1:kfobj.numruns])
+    plt.plot(epochs[1:kfobj.numruns],data3[1:kfobj.numruns].transpose())
     plt.xlabel('Epochs')
     plt.title(title_prefix+'Residuals of Exponentials'+suffix,fontsize=10)    
 
@@ -123,11 +123,14 @@ def plot_posgains(kfobj,fignum=3, expflag=0):
     plt.title('Positive Gains')
     
 def plot_gains(kfobj,state=0,fignum=4):
-    gains = kfobj.K[state,:]
-    epochs=list(range(0,kfobj.numruns))
+    gains = kfobj.K[state,1:].reshape((kfobj.numruns,))
+    epochs=np.arange(kfobj.numruns)
     plt.figure(fignum)
     
-    plt.plot(epochs[1:kfobj.numruns],gains.reshape((kfobj.numruns))[1:kfobj.numruns],
+    plt.plot(epochs[1:kfobj.numruns],gains[1:kfobj.numruns],
              label='Gain for state 1')
+    plt.title('Kalman Gain for state '+str(state))
+    plt.show()
+
 
     

@@ -30,13 +30,14 @@ for stock_file in infiles:
 timestamps = dfs[0].index
 
 myiter = iter(timestamps)
-#ts = next(myiter)
+#next_tstamp = next(myiter)
 
+# For testing only:
 for x in list(range(5)):
-    ts = next(myiter)
+    next_tstamp = next(myiter)
     for i in [0,1,2]:
         print(tickers[i])
-        print(np.log(dfs[i].loc[ts][['open','close']]))
+        print(np.log(dfs[i].loc[next_tstamp][['open','close']]))
     
 
 
