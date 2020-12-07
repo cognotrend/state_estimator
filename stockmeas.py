@@ -53,11 +53,11 @@ class StockMeasurement():
             else:
                 self.meas_array[i]= self.dfs[i+1].loc[next_tstamp]['open'] - ref_meas
         noise_array = np.random.normal(0,self.noiseSigma,(self.num_stocks-1,1))
-        print('meas_array shape: '+str(self.meas_array.shape))
-        print('noise_array shape: '+ str(noise_array.shape))
+#        print('meas_array shape: '+str(self.meas_array.shape))
+#        print('noise_array shape: '+ str(noise_array.shape))
         meas = self.meas_array[:,0] + noise_array[:,0]
         meas = meas.reshape((self.num_stocks-1,1))
-        print('meas shape: '+str(meas.shape))
+#        print('meas shape: '+str(meas.shape))
         return meas
     
     def reset(self):

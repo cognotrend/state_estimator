@@ -77,18 +77,24 @@ def plot_residuals(kfobj,fignum=2, expflag=0, title_prefix=''):
     plt.figure(fignum)
     epochs=list(range(0,kfobj.numruns))
 
-
     ax0=plt.subplot(3,1,1)
     plt.setp(ax0.get_xticklabels(), visible=False)
-    plt.plot(epochs[1:kfobj.numruns],data1[1:kfobj.numruns].transpose(),
-             epochs[1:kfobj.numruns],data2[1:kfobj.numruns].transpose())
-    plt.legend(['Predicted','Actual'])
+    plt.plot(data1.transpose())
+    plt.legend(['Amzn','GE','MSFT'])
     plt.title(title_prefix+'Predicted Measurements'+suffix,fontsize=10)
 
-    plt.subplot(3,1,2)
-    plt.plot(epochs[1:kfobj.numruns],data3[1:kfobj.numruns].transpose())
+    ax1=plt.subplot(3,1,2)
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    plt.plot(data2.transpose())
+    plt.legend(['Amzn','GE','MSFT'])
+    plt.title(title_prefix+'Actual Measurements'+suffix,fontsize=10)
+
+    plt.subplot(3,1,3)
+    plt.plot(data3.transpose())
+    plt.legend(['Amzn','GE','MSFT'])
     plt.xlabel('Epochs')
     plt.title(title_prefix+'Residuals of Exponentials'+suffix,fontsize=10)    
+    plt.show()
 
 #    ax1=plt.subplot(3,1,2,sharex=ax2)
 #    plt.setp(ax1.get_xticklabels(), visible=False)

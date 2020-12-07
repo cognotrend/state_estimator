@@ -20,10 +20,10 @@ mykf = kf.KalmanFilter(meas_obj=mysm,
                        dt=1/3,  # what unit of time?  Daily (1)?, seconds (24*3600)?
                        phi_type=1,
                        sigma=0.000001,  # Stock prices are accurately reported
-                       num_runs=100,
+                       num_runs=35,
                        logmode=1, 
                        num_blocks=4,
-                       displayflag=True,
+                       displayflag=False,
                        verbose=False)
 mykf.run()
 '''

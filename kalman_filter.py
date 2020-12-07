@@ -9,7 +9,7 @@ import datetime
 import kalman_utils as ku
 
 default_numruns=5
-default_q_factor=0.00001
+default_q_factor=0.1
 default_meas_noise_sigma=0.001
 default_logmode = 0
 deterministic = False
@@ -80,10 +80,10 @@ class KalmanFilter():
 
 # Create contstant process noise covariance Q:
         self.pnobj  = pn.ProcessNoise(dt=self.dt,
-                                      tau_factor=self.tau_factor,
-                                  state_size=self.basic_state_size,
-                                  phi_type=self.phi_type,
-                                  q_factor=default_q_factor)
+                                tau_factor=self.tau_factor,
+                                state_size=self.basic_state_size,
+                                phi_type=self.phi_type,
+                                q_factor=default_q_factor)
         self.Basic_Q = self.pnobj.Q
         self.Basic_Alt_Q = self.pnobj.Alt_Q
         if deterministic:
@@ -238,7 +238,7 @@ class KalmanFilter():
 #        self.P_minus = np.dot(self.Phi,np.dot(self.P_plus,self.Phi.transpose())) + self.Q
         self.P_minus = TempPhi @ self.P_plus @ TempPhi.transpose() + TempQ
 # Kludge:  rescaling:
-        self.P_minus = 0.8*self.P_minus
+        self.P_minus = 0.80*self.P_minus
         if self.verbose:
             print('Cov Extrap:')
             print(self.P_minus)
