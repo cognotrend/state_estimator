@@ -10,7 +10,7 @@ import kalman_utils as ku
 
 default_numruns=5
 default_q_factor=0.1
-default_meas_noise_sigma=0.001
+default_meas_noise_sigma=0.1
 default_logmode = 0
 deterministic = False
 class KalmanFilter():
@@ -238,7 +238,7 @@ class KalmanFilter():
 #        self.P_minus = np.dot(self.Phi,np.dot(self.P_plus,self.Phi.transpose())) + self.Q
         self.P_minus = TempPhi @ self.P_plus @ TempPhi.transpose() + TempQ
 # Kludge:  rescaling:
-        self.P_minus = 0.80*self.P_minus
+#        self.P_minus = 0.80*self.P_minus
         if self.verbose:
             print('Cov Extrap:')
             print(self.P_minus)
@@ -276,7 +276,10 @@ class KalmanFilter():
             print('Update: Pos Definite? '+str(ku.is_pos_def(self.P_plus)))
         meas_tmp = self.meas_func()
 #        print('meas_tmp shape: ' + str(meas_tmp.shape))
-        self.z[:,self.k] = meas_tmp.reshape((self.num_blocks-1,))
+        if self.num_blocks>1:
+            self.z[:,self.k] = meas_tmp.reshape((self.num_blocks-1,))
+        else:
+            self.z[:,self.k] = meas_tmp
         self.zhat[:,self.k] = np.dot(self.H,self.x_minus[:,self.k])
         self.residual[:,self.k] = self.z[:,self.k] - self.zhat[:,self.k]
         self.exp_residual[:,self.k] = np.exp(self.z[:,self.k]) - np.exp(self.zhat[:,self.k])

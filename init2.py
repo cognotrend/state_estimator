@@ -1,11 +1,14 @@
 import kalman_filter as kf
 import stockmeas as sm
 import kalplots as kp
-infiles=['daily_adjusted_IBM.csv',
-         'daily_adjusted_AMZN.csv',
-         'daily_adjusted_GE.csv',
-         'daily_adjusted_MSFT.csv']
-title_prefix='Price Diff Filter IBM=reference: '
+infiles=['daily_adjusted_IBM.csv']
+#,
+#         'daily_adjusted_AMZN.csv',
+#         'daily_adjusted_GE.csv',
+#         'daily_adjusted_MSFT.csv']
+title_prefix='Std 3-state filter: IBM '
+my_legend_str = ['IBM']
+#my_legend_str = ['Amzn','GE','MSFT']
 mysm = sm.StockMeasurement(noiseSigma=0, # added measurement noise
                            logmode=1,
                            infiles=infiles
@@ -16,13 +19,13 @@ mysm = sm.StockMeasurement(noiseSigma=0, # added measurement noise
 mykf = kf.KalmanFilter(meas_obj=mysm,
                        meas_func=mysm.nextMeas, 
                        basic_state_size=3,
-                       meas_size = 3,
+                       meas_size = 1,
                        dt=1/3,  # what unit of time?  Daily (1)?, seconds (24*3600)?
                        phi_type=1,
                        sigma=0.000001,  # Stock prices are accurately reported
                        num_runs=35,
                        logmode=1, 
-                       num_blocks=4,
+                       num_blocks=1,
                        displayflag=False,
                        verbose=False)
 mykf.run()
@@ -40,6 +43,10 @@ kp.std_sawtooth_plot(fignum=1,kfobj=mykf,expflag=1,
                      last_percent=1,
                      title_prefix=title_prefix)
 kp.plot_residuals(kfobj=mykf,expflag=1,
-                  title_prefix=title_prefix)
+                  title_prefix=title_prefix,
+                  legend_str=my_legend_str)
 #kp.plot_posgains(kfobj=mykf,expflag=1)
 kp.plot_gains(kfobj=mykf,state=0)
+
+mykf.dump()
+

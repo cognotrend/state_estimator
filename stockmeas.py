@@ -2,12 +2,12 @@ import numpy as np
 import csv
 import datetime as dt
 import pandas as pd
-
+import random
 ''' Resources:
 1)  "Lognormal Model for Stock Prices", Michael J. Sharpe, UCD Math Dept, 
     http://www.math.ucsd.edu/~msharpe/stockgrowth.pdf
 TODO:
-    1) Add processing of multiple stocks if num stocks >1
+    1) Add processing of multiple stocks if num stocks >1  Done
     2) Ensure default of a single direct measurement if num stocks =1
 '''
 class StockMeasurement():
@@ -38,7 +38,6 @@ class StockMeasurement():
             
         self.meas_func = self.nextMeas
         self.meas_array = np.zeros((self.num_stocks-1,1))
-#        self.min_rec_num = min(self.num_records)
 
     def nextMeas(self):
         next_tstamp = next(self.myiter)
@@ -47,19 +46,22 @@ class StockMeasurement():
             ref_meas = np.log(self.dfs[0].loc[next_tstamp]['open'])
         else:
             ref_meas = self.dfs[0].loc[next_tstamp]['open']
-        for i in list(range(0,self.num_stocks-1)):
-            if self.logmode==1:
-                self.meas_array[i]= np.log(self.dfs[i+1].loc[next_tstamp]['open']) - ref_meas
-            else:
-                self.meas_array[i]= self.dfs[i+1].loc[next_tstamp]['open'] - ref_meas
-        noise_array = np.random.normal(0,self.noiseSigma,(self.num_stocks-1,1))
-#        print('meas_array shape: '+str(self.meas_array.shape))
-#        print('noise_array shape: '+ str(noise_array.shape))
-        meas = self.meas_array[:,0] + noise_array[:,0]
-        meas = meas.reshape((self.num_stocks-1,1))
-#        print('meas shape: '+str(meas.shape))
+        if self.num_stocks>1:
+            for i in list(range(0,self.num_stocks-1)):
+                if self.logmode==1:
+                    self.meas_array[i]= np.log(self.dfs[i+1].loc[next_tstamp]['open']) - ref_meas
+                else:
+                    self.meas_array[i]= self.dfs[i+1].loc[next_tstamp]['open'] - ref_meas
+            noise_array = np.random.normal(0,self.noiseSigma,(self.num_stocks-1,1))
+    #        print('meas_array shape: '+str(self.meas_array.shape))
+    #        print('noise_array shape: '+ str(noise_array.shape))
+            meas = self.meas_array[:,0] + noise_array[:,0]
+            meas = meas.reshape((self.num_stocks-1,1))
+    #        print('meas shape: '+str(meas.shape))
+        else:
+            meas = (ref_meas+random.gauss(0, self.noiseSigma))*np.ones((1,1))
         return meas
-    
+ 
     def reset(self):
         self.index = -1
 

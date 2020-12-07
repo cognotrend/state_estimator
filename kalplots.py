@@ -64,7 +64,10 @@ def std_sawtooth_plot(kfobj,fignum=1,expflag=0,last_percent=0.10,
     plt.xlabel('Epochs')
     plt.show()
 
-def plot_residuals(kfobj,fignum=2, expflag=0, title_prefix=''):
+def plot_residuals(kfobj,fignum=2, 
+            expflag=0, 
+            title_prefix='',
+            legend_str = ['IBM']):
     data1 = kfobj.zhat[:,1:]
     data2 = kfobj.z[:,1:]
     data3 = kfobj.residual[:,1:]
@@ -80,18 +83,18 @@ def plot_residuals(kfobj,fignum=2, expflag=0, title_prefix=''):
     ax0=plt.subplot(3,1,1)
     plt.setp(ax0.get_xticklabels(), visible=False)
     plt.plot(data1.transpose())
-    plt.legend(['Amzn','GE','MSFT'])
+    plt.legend(legend_str)
     plt.title(title_prefix+'Predicted Measurements'+suffix,fontsize=10)
 
     ax1=plt.subplot(3,1,2)
     plt.setp(ax1.get_xticklabels(), visible=False)
     plt.plot(data2.transpose())
-    plt.legend(['Amzn','GE','MSFT'])
+    plt.legend(legend_str)
     plt.title(title_prefix+'Actual Measurements'+suffix,fontsize=10)
 
     plt.subplot(3,1,3)
     plt.plot(data3.transpose())
-    plt.legend(['Amzn','GE','MSFT'])
+    plt.legend(legend_str)
     plt.xlabel('Epochs')
     plt.title(title_prefix+'Residuals of Exponentials'+suffix,fontsize=10)    
     plt.show()
