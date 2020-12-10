@@ -9,7 +9,7 @@ import datetime
 import kalman_utils as ku
 
 default_numruns=5
-default_q_factor=0.1
+default_q_factor=.01
 default_meas_noise_sigma=0.1
 default_logmode = 0
 deterministic = False
@@ -29,9 +29,15 @@ class KalmanFilter():
     Add a ground truth simulator mode:  by revering ground truth out of measurments or
     Generating measurements from ground truth
     Add module to read alphavantage csv files with pandas.  Done.
-    To do 2020-11-09:  Integrate block measurements with block state (ensemble)
+    To do 2020-11-09:  Integrate block measurements with block state (ensemble) Done
     x is nx1, w is nx1, Phi is nxn, z is num_blocks-1x1, v is num_blocks-1xn,
     H is num_blocksxn,  P is nxn, Q is nxn, R is num_blocks-1 x num_blocksxn
+    2) Make this event-driven based on obtaining a measurment, with extrapolaton from 
+    previous update only done when a new measurement is obtained.  Use timedelta for dt.  
+    3) Possibly extrapolate via small amounts in between measurements.  
+    4) Make initial update estimate same as measurement (zero residual)
+    5) Use Corey Schafer's subplot approach
+
     '''
 
     def __init__(self,
@@ -43,6 +49,7 @@ class KalmanFilter():
                  meas_func=None,
                  sigma=default_meas_noise_sigma,
                  num_blocks=1, # for ensemble of filters
+                 composite=False,
                  phi_type=0,ref_model=1, 
                  logmode=default_logmode,
                  num_runs=default_numruns,
@@ -52,6 +59,7 @@ class KalmanFilter():
         '''
         KalmanFilter object constructor
         '''
+        self.composite = composite
         self.logmode = logmode
         self.numruns = num_runs
         self.displayflag = displayflag
@@ -119,8 +127,8 @@ class KalmanFilter():
         self.num_blocks = num_blocks
         self.ref_model = ref_model
         
-        self.z = np.zeros((self.meas_size,self.numruns))
-        self.zhat = np.zeros((self.meas_size,self.numruns))
+        self.z = np.zeros((self.meas_size,1,self.numruns))
+        self.zhat = np.zeros((self.meas_size,1,self.numruns))
         # Future:  Make time-varying as function of volatility
         self.R = cov.Covariance(size=self.meas_size,
                                 sigma1=self.sigma,
@@ -132,6 +140,12 @@ class KalmanFilter():
         else:
             self.H = np.zeros((self.meas_size,self.state_size))
             self.H[0,0]= 1.0
+            if self.composite:
+                numblocks = int(self.meas_size/self.basic_state_size)
+                for i in list(range(0,numblocks)):
+                    self.H[i*self.basic_state_size:(i+1)*self.basic_state_size,:]=np.eye(self.basic_state_size)
+                    
+            
 
         self.Basic_P = cov.Covariance(size=self.basic_state_size,
 #                                      sigma1=1.0,
@@ -177,11 +191,11 @@ class KalmanFilter():
                 self.x_plus[0,0] = meas_tmp[0,0]
 
         self.K_cum = np.zeros((self.state_size,self.meas_size,self.numruns))
-        self.z = np.zeros((self.meas_size,self.numruns))
-        self.zhat = np.zeros((self.meas_size,self.numruns))
-        self.residual =  np.zeros((self.meas_size,self.numruns))
-        self.exp_residual =  np.zeros((self.meas_size,self.numruns))
-        self.meas_array = np.random.randn(self.meas_size,self.numruns)  # Scalar meas.
+        self.z = np.zeros((self.meas_size,1,self.numruns))
+        self.zhat = np.zeros((self.meas_size,1,self.numruns))
+        self.residual =  np.zeros((self.meas_size,1,self.numruns))
+        self.exp_residual =  np.zeros((self.meas_size,1,self.numruns))
+        self.meas_array = np.random.randn(self.meas_size,1,self.numruns)  # Scalar meas.
         self.k = 0
         self.posgains=[]
         
@@ -198,7 +212,7 @@ class KalmanFilter():
             if self.displayflag:
                 self.display()
             self.cycle()
-            r = self.residual[0,self.k]
+            r = self.residual[0,0,self.k]
             rsum = rsum + r
             rsumsq = rsumsq + r*r
         self.display()
@@ -250,6 +264,8 @@ class KalmanFilter():
             self.posgains.append(increase)
 
     def computeGain(self):
+        if self.composite:
+            self.R = self.meas_obj.genMeasNoiseMatrix()
         S = np.dot(self.H,np.dot(self.P_minus,self.H.transpose()))+self.R
         S_inv = np.linalg.inv(S)
         PH_trans = self.P_minus @ self.H.transpose()
@@ -277,13 +293,13 @@ class KalmanFilter():
         meas_tmp = self.meas_func()
 #        print('meas_tmp shape: ' + str(meas_tmp.shape))
         if self.num_blocks>1:
-            self.z[:,self.k] = meas_tmp.reshape((self.num_blocks-1,))
+            self.z[:,0,self.k] = meas_tmp.reshape((self.num_blocks-1,))
         else:
-            self.z[:,self.k] = meas_tmp
-        self.zhat[:,self.k] = np.dot(self.H,self.x_minus[:,self.k])
-        self.residual[:,self.k] = self.z[:,self.k] - self.zhat[:,self.k]
-        self.exp_residual[:,self.k] = np.exp(self.z[:,self.k]) - np.exp(self.zhat[:,self.k])
-        weighted_residual = np.dot(self.K[:,:],self.residual[:,self.k])
+            self.z[:,0,self.k] = meas_tmp.reshape((self.meas_size,))
+        self.zhat[:,0,self.k] = np.dot(self.H,self.x_minus[:,self.k])
+        self.residual[:,0,self.k] = self.z[:,0,self.k] - self.zhat[:,0,self.k]
+        self.exp_residual[:,0,self.k] = np.exp(self.z[:,0,self.k]) - np.exp(self.zhat[:,0,self.k])
+        weighted_residual = np.dot(self.K[:,:],self.residual[:,0,self.k])
         self.x_plus[:,self.k] = self.x_minus[:,self.k] + weighted_residual
 #        new_state = self.x_plus[:,self.k]
 #        print(new_state)
@@ -308,11 +324,11 @@ class KalmanFilter():
             print('Prior State:\n',self.x_minus[:,self.k])
             print('Prior Cov:\n', self.P_minus)
             print('Kalman Gain:\n',self.K[:,:])
-            print('Measurement:\n',self.z[:,self.k])
+            print('Measurement:\n',self.z[:,0,self.k])
             if self.logmode==1:
-                print('Exponential of Residual:\n',np.exp(self.residual[:,self.k]))
+                print('Exponential of Residual:\n',np.exp(self.residual[:,0,self.k]))
             if self.x_minus[0,self.k] != 0.0:
-                print('Residual as percent of State:\n',(self.residual[:,self.k]/self.x_minus[0,self.k])*100,'%')
+                print('Residual as percent of State:\n',(self.residual[:,0,self.k]/self.x_minus[0,self.k])*100,'%')
             print('Posterior State:\n',self.x_plus[:,self.k])
             print('Posterior Cov:\n', self.P_plus)
             print('**********************************************')
@@ -331,7 +347,11 @@ class KalmanFilter():
         print("Measurement Model: ")
         print("H: Shape: ",self.H.shape,'\n')
         print(self.H)
-        print("R: Shape: ",self.R.shape,'\n')
+        print("R: Shape: ",self.R.shape)
+        if ku.is_pos_def(self.R):
+            print('pos definite')
+        else:
+            print('not pos definite')
         print(self.R)
         print('Initial Covariance: Shape: ',self.P_minus.shape)
         print(self.P_minus)

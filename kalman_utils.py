@@ -5,6 +5,14 @@ Created on Tue Nov 10 22:56:30 2020
 @author: cognotrend
 """
 import numpy as np
+import json
+from json import JSONEncoder
+
+class NumpyArrayEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
 
 def is_pos_def(x):
     return np.all(np.linalg.eigvals(x) > 0)
