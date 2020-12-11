@@ -9,169 +9,59 @@ import json
 # variance:	0.00027046	0.00056898
 # exp(mean)	1.00004333	0.99999971
 # exp(variance)	1.00027050	1.00056914
-mynumruns =1000
-infiles=['daily_adjusted_IBM.csv']
-#,
-#         'daily_adjusted_AMZN.csv',
-#         'daily_adjusted_GE.csv',
-#         'daily_adjusted_MSFT.csv']
-title_prefix='Std 3-state filter: IBM '
-my_legend_str = ['IBM']
-#my_legend_str = ['Amzn','GE','MSFT']
-mysm1 = sm.StockMeasurement(noiseSigma=0, # added measurement noise
-                           logmode=1,
-                           infiles=infiles
-                          )
-#                           infiles=['daily_AMZN_stockmeas.csv',
-#                                    'GE-2000-Aug-1_to_2015-September-04.csv'])
+mynumruns =200
+stocks = ['IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT']
+q_factors = [1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4]
+mykfs = []
+i=0
+for stock in stocks:
+    infiles=['daily_adjusted_'+stock+'.csv']
+    title_prefix='Std 3-state filter: '+stock
+    my_legend_str = [stock]
+    mysm_tmp = sm.StockMeasurement(noiseSigma=0, # added measurement noise
+                            logmode=1,
+                            infiles=infiles
+                            )
+    q_factor = q_factors[i]
+    i = i+1
+    mykf_tmp =kf.KalmanFilter(meas_obj=mysm_tmp,
+                        meas_func=mysm_tmp.nextMeas, 
+                        basic_state_size=3,
+                        meas_size = 1,
+                        dt=1,  # what unit of time?  Daily (1)?, seconds (24*3600)?
+                        phi_type=1,
+                        sigma=0.000001,  # Stock prices are accurately reported
+                        num_runs=mynumruns,
+                        logmode=1, 
+                        num_blocks=1,
+                        displayflag=False,
+                        verbose=False,
+                        q_factor=q_factor)
 
-mykf1 = kf.KalmanFilter(meas_obj=mysm1,
-                       meas_func=mysm1.nextMeas, 
-                       basic_state_size=3,
-                       meas_size = 1,
-                       dt=1,  # what unit of time?  Daily (1)?, seconds (24*3600)?
-                       phi_type=1,
-                       sigma=0.000001,  # Stock prices are accurately reported
-                       num_runs=mynumruns,
-                       logmode=1, 
-                       num_blocks=1,
-                       displayflag=False,
-                       verbose=False)
-
-mykf1.Basic_Q = np.array([[1,0,0],
-                          [0, 0.00027, 0],
-                          [0,0,0.000568]])
-mykf1.Q = mykf1.Basic_Q        
-mykf1.Alt_Q = 9*mykf1.Q
-mykf1.run()
-
-infiles=['daily_adjusted_AMZN.csv']
-#,
-#         'daily_adjusted_AMZN.csv',
-#         'daily_adjusted_GE.csv',
-#         'daily_adjusted_MSFT.csv']
-title_prefix='Std 3-state filter: AMZN '
-my_legend_str = ['AMZN']
-#my_legend_str = ['Amzn','GE','MSFT']
-mysm2 = sm.StockMeasurement(noiseSigma=0, # added measurement noise
-                           logmode=1,
-                           infiles=infiles
-                          )
-#                           infiles=['daily_AMZN_stockmeas.csv',
-#                                    'GE-2000-Aug-1_to_2015-September-04.csv'])
-
-mykf2 = kf.KalmanFilter(meas_obj=mysm2,
-                       meas_func=mysm2.nextMeas, 
-                       basic_state_size=3,
-                       meas_size = 1,
-                       dt=1,  # what unit of time?  Daily (1)?, seconds (24*3600)?
-                       phi_type=1,
-                       sigma=0.000001,  # Stock prices are accurately reported
-                       num_runs=mynumruns,
-                       logmode=1, 
-                       num_blocks=1,
-                       displayflag=False,
-                       verbose=False)
-
-mykf2.Basic_Q = np.array([[1,0,0],
-                          [0, 0.00027, 0],
-                          [0,0,0.000568]])
-mykf2.Q = mykf2.Basic_Q        
-mykf2.Alt_Q = 9*mykf2.Q
-mykf2.run()
+    # mykf_tmp.Basic_Q = q_factor * np.array([[0,0,0],
+    #                           [0, 0.00027, 0],
+    #                           [0,0,0.000568]])
+    # mykf_tmp.Q = mykf_tmp.Basic_Q        
+    # mykf_tmp.Alt_Q = 9*mykf_tmp.Q
+    mykf_tmp.run()
+    mykfs.append(mykf_tmp)
 
 
-infiles=['daily_adjusted_GE.csv']
-#,
-#         'daily_adjusted_AMZN.csv',
-#         'daily_adjusted_GE.csv',
-#         'daily_adjusted_MSFT.csv']
-title_prefix='Std 3-state filter: GE '
-my_legend_str = ['GE']
-#my_legend_str = ['Amzn','GE','MSFT']
-mysm3 = sm.StockMeasurement(noiseSigma=0, # added measurement noise
-                           logmode=1,
-                           infiles=infiles
-                          )
-#                           infiles=['daily_AMZN_stockmeas.csv',
-#                                    'GE-2000-Aug-1_to_2015-September-04.csv'])
-
-mykf3 = kf.KalmanFilter(meas_obj=mysm3,
-                       meas_func=mysm3.nextMeas, 
-                       basic_state_size=3,
-                       meas_size = 1,
-                       dt=1,  # what unit of time?  Daily (1)?, seconds (24*3600)?
-                       phi_type=1,
-                       sigma=0.000001,  # Stock prices are accurately reported
-                       num_runs=mynumruns,
-                       logmode=1, 
-                       num_blocks=1,
-                       displayflag=False,
-                       verbose=False)
-
-mykf3.Basic_Q = np.array([[1,0,0],
-                          [0, 0.00027, 0],
-                          [0,0,0.000568]])
-mykf3.Q = mykf3.Basic_Q        
-mykf3.Alt_Q = 9*mykf3.Q
-mykf3.run()
-
-infiles=['daily_adjusted_MSFT.csv']
-#,
-#         'daily_adjusted_AMZN.csv',
-#         'daily_adjusted_GE.csv',
-#         'daily_adjusted_MSFT.csv']
-title_prefix='Std 3-state filter: MSFT '
-my_legend_str = ['MSFT']
-#my_legend_str = ['Amzn','GE','MSFT']
-mysm4 = sm.StockMeasurement(noiseSigma=0, # added measurement noise
-                           logmode=1,
-                           infiles=infiles
-                          )
-#                           infiles=['daily_AMZN_stockmeas.csv',
-#                                    'GE-2000-Aug-1_to_2015-September-04.csv'])
-
-mykf4 = kf.KalmanFilter(meas_obj=mysm4,
-                       meas_func=mysm4.nextMeas, 
-                       basic_state_size=3,
-                       meas_size = 1,
-                       dt=1,  # what unit of time?  Daily (1)?, seconds (24*3600)?
-                       phi_type=1,
-                       sigma=0.000001,  # Stock prices are accurately reported
-                       num_runs=mynumruns,
-                       logmode=1, 
-                       num_blocks=1,
-                       displayflag=False,
-                       verbose=False)
-
-mykf4.Basic_Q = np.array([[1,0,0],
-                          [0, 0.00027, 0],
-                          [0,0,0.000568]])
-mykf4.Q = mykf4.Basic_Q        
-mykf4.Alt_Q = 9*mykf4.Q
-mykf4.run()
-
-infiles=['daily_adjusted_MSFT.csv']
-#,
-#         'daily_adjusted_AMZN.csv',
-#         'daily_adjusted_GE.csv',
-#         'daily_adjusted_MSFT.csv']
 title_prefix='Std 3-state filter: Composite '
 my_legend_str = ['Composite']
-#my_legend_str = ['Amzn','GE','MSFT']
 mysm = sm.StockMeasurement(noiseSigma=0, # added measurement noise
                            logmode=0,  # measurements already in logmode from subfilters
                            infiles=None,
                            subfilters=True,
-                           subfilter_list=[mykf1,mykf2,mykf2,mykf4]
+                           subfilter_list=mykfs
                           )
 #                           infiles=['daily_AMZN_stockmeas.csv',
 #                                    'GE-2000-Aug-1_to_2015-September-04.csv'])
-
+basic_size=3
 mykf = kf.KalmanFilter(meas_obj=mysm,
                        meas_func=mysm.nextMeas, 
-                       basic_state_size=3,
-                       meas_size = 12,
+                       basic_state_size=basic_size,
+                       meas_size = len(stocks)*basic_size,
                        dt=1,  # what unit of time?  Daily (1)?, seconds (24*3600)?
                        phi_type=1,
                        sigma=0.0000001,  # Stock prices are accurately reported
@@ -182,11 +72,11 @@ mykf = kf.KalmanFilter(meas_obj=mysm,
                        displayflag=False,
                        verbose=False)
 
-mykf.Basic_Q = np.array([[0.1,0,0],
-                          [0, 0.000027, 0],
-                          [0,0,0.0000568]])
-mykf.Q = mykf.Basic_Q        
-mykf.Alt_Q = 9*mykf.Q
+# mykf.Basic_Q = np.array([[0.1,0,0],
+#                           [0, 0.000027, 0],
+#                           [0,0,0.0000568]])
+# mykf.Q = mykf.Basic_Q        
+# mykf.Alt_Q = 9*mykf.Q
 mykf.run()
 mykf.dump()
 
@@ -199,5 +89,6 @@ kp.plot_residuals(kfobj=mykf,expflag=1,
                   legend_str=my_legend_str)
 #kp.plot_posgains(kfobj=mykf,expflag=1)
 kp.plot_gains(kfobj=mykf,state=0)
+kp.plot_states(kfobj=mykf)
 
 

@@ -32,8 +32,8 @@ class Covariance():
             d=sigma1*np.ones(size)
             self.Cov = np.diag(d)
         self.size = size
-        print(self.__doc__)
-        print('\t\tImplementing: ',msg)
+        # print(self.__doc__)
+        # print('\t\tImplementing: ',msg)
 
     def test(self):
         print(self.Cov)

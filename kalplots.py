@@ -37,6 +37,7 @@ def new_collate(v1,v2):
 
 def std_sawtooth_plot(kfobj,fignum=1,expflag=0,last_percent=0.10,
                       title_prefix=''): #first three state variables
+    plt.style.use('seaborn')
     plt.figure(fignum)
     lastnum=int(kfobj.numruns*last_percent)
     start = kfobj.numruns - lastnum
@@ -62,6 +63,7 @@ def std_sawtooth_plot(kfobj,fignum=1,expflag=0,last_percent=0.10,
     ax2=plt.subplot(3,1,3,sharex=ax1) 
     plt.plot(doubletime,sawtooth[2,:])
     plt.xlabel('Epochs')
+    plt.tight_layout()
     plt.show()
 
 def plot_residuals(kfobj,fignum=2, 
@@ -78,30 +80,16 @@ def plot_residuals(kfobj,fignum=2,
         data3 = kfobj.exp_residual[:,0,:]
         suffix = ' (Exp)'
 
+    plt.style.use('seaborn')
     epochs=list(range(0,kfobj.numruns))
     fig, axs = plt.subplots(nrows=kfobj.state_size,ncols=1, sharex=True)
-    plt.title(title_prefix+' Residuals'+suffix)
     for i in list(range(0,kfobj.state_size)):
+        if i==0:
+            axs[i].set_title('Residuals')
         axs[i].plot(epochs[1:kfobj.numruns],data3[i,1:kfobj.numruns],
                     label='Residuals: State '+str(i))
-        axs[i].legend()
-    # ax0=plt.subplot(3,1,1)
-    # plt.setp(ax0.get_xticklabels(), visible=False)
-    # plt.plot(data1.transpose())
-    # plt.legend(legend_str)
-    # plt.title(title_prefix+'Predicted Measurements'+suffix,fontsize=10)
-
-    # ax1=plt.subplot(3,1,2)
-    # plt.setp(ax1.get_xticklabels(), visible=False)
-    # plt.plot(data2.transpose())
-    # plt.legend(legend_str)
-    # plt.title(title_prefix+'Actual Measurements'+suffix,fontsize=10)
-
-    # plt.subplot(3,1,3)
-    # plt.plot(data3.transpose())
-    # plt.legend(legend_str)
-    # plt.xlabel('Epochs')
-    # plt.title(title_prefix+'Residuals of Exponentials'+suffix,fontsize=10)    
+        axs[i].legend(loc='upper left')
+    plt.tight_layout()
     plt.show()
 
 #    ax1=plt.subplot(3,1,2,sharex=ax2)
@@ -128,17 +116,35 @@ def plot_residuals(kfobj,fignum=2,
     # plt.show()
   
 def plot_gains(kfobj,state=0,fignum=4):
+    plt.style.use('seaborn')
     epochs=np.arange(kfobj.numruns)
     fig, axs = plt.subplots(nrows=kfobj.state_size,ncols=1, sharex=True)
     for i in list(range(0,kfobj.state_size)):
         gains = kfobj.K_cum[i,0,:].transpose()
         axs[i].plot(epochs[1:kfobj.numruns],gains[1:kfobj.numruns],
                     label='Gain: State '+str(i)+',Meas '+str(0))
-        axs[i].legend()
+        axs[i].legend(loc='upper left')
         if i==0:
-            plt.title('Kalman Gains for each state')
+            axs[i].set_title('Kalman Gains for each state')
 
+    plt.tight_layout()
     plt.show()
+
+def plot_states(kfobj,state=0,fignum=4):
+    epochs=np.arange(kfobj.numruns)
+    fig, axs = plt.subplots(nrows=kfobj.state_size,ncols=1, sharex=True)
+    for i in list(range(0,kfobj.state_size)):
+        states = np.exp(kfobj.x_plus[i,:].transpose())
+        axs[i].plot(epochs[1:kfobj.numruns],states[1:kfobj.numruns],
+                    label='State '+str(i))
+        axs[i].legend(loc='upper left')
+
+        if i==0:
+            axs[i].set_title('State Estimates')
+
+    plt.tight_layout()
+    plt.show()
+
 
 def plot_posgains(kfobj,fignum=3, expflag=0):
     plt.figure(fignum)

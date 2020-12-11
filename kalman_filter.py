@@ -54,7 +54,8 @@ class KalmanFilter():
                  logmode=default_logmode,
                  num_runs=default_numruns,
                  displayflag=True,
-                 verbose=False
+                 verbose=False,
+                 q_factor = default_q_factor
                  ):
         '''
         KalmanFilter object constructor
