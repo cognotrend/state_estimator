@@ -6,9 +6,9 @@ class Covariance():
     '''
     def __init__(self, 
                  size=3, 
-                 sigma1=0.001, 
-                 sigma2=0.2, 
-                 sigma3=0.4, 
+                 sigma1=0.00001, 
+                 sigma2=0.002, 
+                 sigma3=0.004, 
                  rflag=0, 
                  msg = ''):
         '''

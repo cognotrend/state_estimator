@@ -102,7 +102,7 @@ class StockMeasurement():
             tmp_noise = []
             for i in range(0,len(self.ms)):
                 tmp.append(self.ms[i][:,self.next_ts_index])
-                tmpPdiag = np.diag(self.Ps[i][:,:,self.next_ts_index])
+                tmpPdiag = 0*np.diag(self.Ps[i][:,:,self.next_ts_index]) # temp zero!
                 Psize = tmpPdiag.size
                 tmpNoiseArray = np.zeros((Psize,1))
                 for j in list(range(0,Psize)):

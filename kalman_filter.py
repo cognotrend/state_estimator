@@ -159,7 +159,7 @@ class KalmanFilter():
 
         self.K = np.zeros((self.state_size,self.meas_size))
 
-#        self.reset()
+        self.reset()
 #        print(self.__doc__)
 
     def reset(self):

@@ -4,7 +4,10 @@ import kalplots as kp
 import numpy as np
 import json
 
-# IBM
+# This filter is not a composite, but instead builds a weighted average of each filter's output
+# This would be a good opportunity to use class variables and static functions.  The compute the averages
+# after each cycle.  But that will be a later enhancement.
+# IBM stats:
 # mean:	0.00004333	-0.00000029
 # variance:	0.00027046	0.00056898
 # exp(mean)	1.00004333	0.99999971
@@ -46,9 +49,10 @@ for stock in stocks:
     mykf_tmp.run()
     mykfs.append(mykf_tmp)
 
-
-title_prefix='Std 3-state filter: Composite '
-my_legend_str = ['Composite']
+# Create and use a KF object, but don't actually run it. 
+title_prefix='Std 3-state filter: Weighted Average '
+my_legend_str = ['Weighted Average']
+# This is just a dummy
 mysm = sm.StockMeasurement(noiseSigma=0, # added measurement noise
                            logmode=0,  # measurements already in logmode from subfilters
                            infiles=None,
@@ -68,27 +72,35 @@ mykf = kf.KalmanFilter(meas_obj=mysm,
                        num_runs=mynumruns,
                        logmode=1, 
                        num_blocks=1,
-                       composite=True,
+                       composite=False,
                        displayflag=False,
                        verbose=False)
 
-# mykf.Basic_Q = np.array([[0.1,0,0],
-#                           [0, 0.000027, 0],
-#                           [0,0,0.0000568]])
-# mykf.Q = mykf.Basic_Q        
-# mykf.Alt_Q = 9*mykf.Q
-mykf.run()
-mykf.dump()
+sum_of_recip = np.zeros((basic_size, 1))
+weights = np.zeros((len(stocks), basic_size))
+recip_array = np.zeros((len(stocks),basic_size))
+for i in range(mynumruns):
+    weighted_sum = np.zeros((basic_size,1))
+    for j in range(len(stocks)):
+        recip_array[j,:] = 1/np.diag(mykfs[j].P_plus_cum[:,:,i])
+        sum_of_recip += recip_array[j,:].reshape((basic_size,1))
+    for j in range(len(stocks)):
+        numer = recip_array[j,:].reshape((basic_size,1))
+        weights[j,:] = (numer/sum_of_recip).reshape((basic_size,))
+        summand = mykfs[j].x_plus[:,i].reshape((basic_size,1))
+        weight = weights.transpose()[:,j].reshape((basic_size,1))
+        summand = weight * summand
+        weighted_sum +=  summand
+    mykf.x_plus[:,i] = weighted_sum.reshape((3,))
 
-
-kp.std_sawtooth_plot(fignum=1,kfobj=mykf,expflag=1, 
-                     last_percent=1,
-                     title_prefix=title_prefix)
-kp.plot_residuals(kfobj=mykf,expflag=1,
-                  title_prefix=title_prefix,
-                  legend_str=my_legend_str)
+# kp.std_sawtooth_plot(fignum=1,kfobj=mykf,expflag=1, 
+#                      last_percent=1,
+#                      title_prefix=title_prefix)
+# kp.plot_residuals(kfobj=mykf,expflag=1,
+#                   title_prefix=title_prefix,
+#                   legend_str=my_legend_str)
 #kp.plot_posgains(kfobj=mykf,expflag=1)
-kp.plot_gains(kfobj=mykf,state=0)
+#kp.plot_gains(kfobj=mykf,state=0)
 kp.plot_states(kfobj=mykf)
 
 
