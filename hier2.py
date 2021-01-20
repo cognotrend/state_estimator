@@ -12,9 +12,11 @@ import json
 # variance:	0.00027046	0.00056898
 # exp(mean)	1.00004333	0.99999971
 # exp(variance)	1.00027050	1.00056914
-mynumruns =20
-stocks = ['IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT']
-q_factors = [.1,.1,.1,.1,.2,.2,.2,.2,.3,.3,.3,.3,.4,.4,.4,.4]
+mynumruns =100
+# stocks = ['IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT']
+# q_factors = [.1,1.0,10.0,100.0,.2,.2,.2,.2,.3,.3,.3,.3,.4,.4,.4,.4]
+stocks = ['IBM','GE','MSFT']
+q_factors = [1.0,1.0,1.0]
 mykfs = []
 i=0
 for stock in stocks:
@@ -33,13 +35,14 @@ for stock in stocks:
                         meas_size = 1,
                         dt=1,  # what unit of time?  Daily (1)?, seconds (24*3600)?
                         phi_type=1,
-                        sigma=0.000001,  # Stock prices are accurately reported
+                        sigma=1.0,  # Stock prices are accurately reported
                         num_runs=mynumruns,
                         logmode=1, 
                         num_blocks=1,
                         displayflag=False,
                         verbose=False,
-                        q_factor=q_factor)
+                        q_factor=q_factor,
+                        filter_id=stock)
 
     # mykf_tmp.Basic_Q = q_factor * np.array([[0,0,0],
     #                           [0, 0.00027, 0],
@@ -47,6 +50,11 @@ for stock in stocks:
     # mykf_tmp.Q = mykf_tmp.Basic_Q        
     # mykf_tmp.Alt_Q = 9*mykf_tmp.Q
     mykf_tmp.run()
+    kp.plot_residuals(kfobj=mykf_tmp,expflag=1,
+                   title_prefix=title_prefix,
+                   legend_str=my_legend_str)
+    kp.plot_states(kfobj=mykf_tmp)
+
     mykfs.append(mykf_tmp)
 
 # Create and use a KF object, but don't actually run it. 
@@ -65,7 +73,7 @@ basic_size=3
 mykf = kf.KalmanFilter(meas_obj=mysm,
                        meas_func=mysm.nextMeas, 
                        basic_state_size=basic_size,
-                       meas_size = len(stocks)*basic_size,
+                       meas_size = len(stocks),
                        dt=1,  # what unit of time?  Daily (1)?, seconds (24*3600)?
                        phi_type=1,
                        sigma=0.0000001,  # Stock prices are accurately reported
@@ -74,31 +82,54 @@ mykf = kf.KalmanFilter(meas_obj=mysm,
                        num_blocks=1,
                        composite=False,
                        displayflag=False,
-                       verbose=False)
+                       verbose=False,
+                       filter_id='Composite')
 
-sum_of_recip = np.zeros((basic_size, 1))
-weights = np.zeros((len(stocks), basic_size))
-recip_array = np.zeros((len(stocks),basic_size))
 for i in range(mynumruns):
+    sum_of_recip = np.zeros((basic_size, 1))
+    sum_of_recip_minus = np.zeros((basic_size, 1))
+    weights = np.zeros((len(stocks), basic_size))
+    weights_minus = np.zeros((len(stocks), basic_size))
+    recip_array = np.zeros((len(stocks),basic_size))
+    recip_array_minus = np.zeros((len(stocks),basic_size))
     weighted_sum = np.zeros((basic_size,1))
+    weighted_sum_minus = np.zeros((basic_size,1))
     for j in range(len(stocks)):
         recip_array[j,:] = 1/np.diag(mykfs[j].P_plus_cum[:,:,i])
+        recip_array_minus[j,:] = 1/np.diag(mykfs[j].P_minus_cum[:,:,i])
         sum_of_recip += recip_array[j,:].reshape((basic_size,1))
+        sum_of_recip_minus += recip_array[j,:].reshape((basic_size,1))
     for j in range(len(stocks)):
         numer = recip_array[j,:].reshape((basic_size,1))
+        numer_minus = recip_array_minus[j,:].reshape((basic_size,1))
         weights[j,:] = (numer/sum_of_recip).reshape((basic_size,))
+        weights_minus[j,:] = (numer_minus/sum_of_recip_minus).reshape((basic_size,))
         summand = mykfs[j].x_plus[:,i].reshape((basic_size,1))
+        summand_minus = mykfs[j].x_minus[:,i].reshape((basic_size,1))
         weight = weights.transpose()[:,j].reshape((basic_size,1))
+        weight_minus = weights_minus.transpose()[:,j].reshape((basic_size,1))
         summand = weight * summand
+        summand_minus = weight_minus * summand_minus
         weighted_sum +=  summand
+        weighted_sum_minus += summand_minus
+        mykf.z[j,0,i] = mykfs[j].z[0,0,i]
+
     mykf.x_plus[:,i] = weighted_sum.reshape((3,))
+    mykf.x_minus[:,i] = weighted_sum_minus.reshape((3,))
+    tmp = mykf.x_minus[:,i].reshape((3,1))
+    tmpz = mykf.z[:,:,i].reshape((3,1))
+    mykf.H[1,0]=1.0
+    mykf.H[2,0]=1.0
+    tmp_zhat = np.dot(mykf.H,tmp)
+    mykf.residual[:,:,i] = tmpz - tmp_zhat
 
 # kp.std_sawtooth_plot(fignum=1,kfobj=mykf,expflag=1, 
 #                      last_percent=1,
 #                      title_prefix=title_prefix)
-# kp.plot_residuals(kfobj=mykf,expflag=1,
-#                   title_prefix=title_prefix,
-#                   legend_str=my_legend_str)
+mykf.exp_residual = np.exp(mykf.residual)
+kp.plot_residuals(kfobj=mykf,expflag=1,
+                   title_prefix=title_prefix,
+                   legend_str=my_legend_str)
 #kp.plot_posgains(kfobj=mykf,expflag=1)
 #kp.plot_gains(kfobj=mykf,state=0)
 kp.plot_states(kfobj=mykf)

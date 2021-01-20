@@ -14,7 +14,7 @@ class StockMeasurement():
     def __init__(self,
                  noiseSigma=0,
                  logmode=0, 
-                 infiles=None,
+                 infiles=['daily_adjusted_IBM.csv'],
                  subfilters=False,
                  subfilter_list = []
                  ):

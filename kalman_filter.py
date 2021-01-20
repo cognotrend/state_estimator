@@ -55,11 +55,13 @@ class KalmanFilter():
                  num_runs=default_numruns,
                  displayflag=True,
                  verbose=False,
-                 q_factor = default_q_factor
+                 q_factor = default_q_factor,
+                 filter_id='Test'
                  ):
         '''
         KalmanFilter object constructor
         '''
+        self.filter_id = filter_id
         self.composite = composite
         self.logmode = logmode
         self.numruns = num_runs
@@ -339,7 +341,7 @@ class KalmanFilter():
         return self.meas_array[(0,self.k)]
 
     def dump(self):
-        print("Model Dump:")
+        print(self.filter_id,"Model Dump:")
         print("Process Model:")
         print("Phi:  Shape: ",self.Phi.shape)
         print(self.Phi)

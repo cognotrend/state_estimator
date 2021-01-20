@@ -82,14 +82,22 @@ def plot_residuals(kfobj,fignum=2,
 
     plt.style.use('seaborn')
     epochs=list(range(0,kfobj.numruns))
-    fig, axs = plt.subplots(nrows=kfobj.state_size,ncols=1, sharex=True)
-    for i in list(range(0,kfobj.state_size)):
+    if kfobj.meas_size==1:
+        fig, axs = plt.subplots(nrows=kfobj.meas_size,ncols=1, sharex=True)
+        myfig=[]
+        myfig.append(fig)
+        myaxs=[]
+        myaxs.append(axs)
+    else:
+        myfig, myaxs = plt.subplots(nrows=kfobj.meas_size,ncols=1, sharex=True)
+        
+    for i in list(range(0,kfobj.meas_size)):
         if i==0:
-            axs[i].set_title('Residuals')
-        axs[i].plot(epochs[1:kfobj.numruns],data3[i,1:kfobj.numruns],
-                    label='Residuals: State '+str(i))
-        axs[i].legend(loc='upper left')
-    plt.tight_layout()
+            myaxs[i].set_title('Filter Residuals for '+kfobj.filter_id)
+        myaxs[i].plot(epochs[1:kfobj.numruns],data3[i,1:kfobj.numruns],
+                    label='Residuals: '+str(i))
+        myaxs[i].legend(loc='upper left')
+    plt.tight_layout() 
     plt.show()
 
 #    ax1=plt.subplot(3,1,2,sharex=ax2)
@@ -140,7 +148,7 @@ def plot_states(kfobj,state=0,fignum=4):
         axs[i].legend(loc='upper left')
 
         if i==0:
-            axs[i].set_title('State Estimates')
+            axs[i].set_title('State Estimates for '+kfobj.filter_id)
 
     plt.tight_layout()
     plt.show()
