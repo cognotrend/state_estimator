@@ -42,7 +42,8 @@ for stock in stocks:
                         displayflag=False,
                         verbose=False,
                         q_factor=q_factor,
-                        filter_id=stock)
+                        filter_id=stock,
+                        epoch_dumps=5)
 
     # mykf_tmp.Basic_Q = q_factor * np.array([[0,0,0],
     #                           [0, 0.00027, 0],

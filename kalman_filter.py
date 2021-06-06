@@ -56,12 +56,14 @@ class KalmanFilter():
                  displayflag=True,
                  verbose=False,
                  q_factor = default_q_factor,
-                 filter_id='Test'
+                 filter_id='Test',
+                 epoch_dumps=-1
                  ):
         '''
         KalmanFilter object constructor
         '''
         self.filter_id = filter_id
+        self.epoch_dumps = epoch_dumps
         self.composite = composite
         self.logmode = logmode
         self.numruns = num_runs
@@ -237,16 +239,26 @@ class KalmanFilter():
         # Extapolate state and covariance:
 
         self.k = self.k+1
-        if self.meas_obj.timestamps[self.k]-self.meas_obj.timestamps[self.k-1]>datetime.timedelta(1):
+        curr_dt = self.meas_obj.timestamps[self.k]-self.meas_obj.timestamps[self.k-1]
+        if curr_dt>datetime.timedelta(1):
             TempPhi = self.Alt_Phi
             TempQ = self.Alt_Q
+            if self.verbose or self.k==self.epoch_dumps:
+                print('Taking Alt path.')
+                print('Delta Time: ',curr_dt)
         else:
             TempPhi = self.Phi
             TempQ   = self.Q
-        if self.verbose:
+            if self.verbose or self.k==self.epoch_dumps:
+                print('Taking Normal path.')
+        if self.verbose or self.k==self.epoch_dumps:
             print('Extrap: Phi @ epoch '+str(self.k)+':')
             print(TempPhi)
             print('Extrap: Pos Definite? '+str(ku.is_pos_def(self.P_plus)))
+        if self.verbose or self.k==self.epoch_dumps:
+            print('Cov before Extrap:')
+            print(self.P_minus)
+
 # State Extrapolation:
 #        self.x_minus[:,self.k] = np.dot(self.Phi,self.x_plus[:,self.k-1])
         self.x_minus[:,self.k] = TempPhi @ self.x_plus[:,self.k-1]
@@ -256,7 +268,7 @@ class KalmanFilter():
         self.P_minus = TempPhi @ self.P_plus @ TempPhi.transpose() + TempQ
 # Kludge:  rescaling:
 #        self.P_minus = 0.80*self.P_minus
-        if self.verbose:
+        if self.verbose or self.k==self.epoch_dumps:
             print('Cov Extrap:')
             print(self.P_minus)
 #            print('with dot mult:')
