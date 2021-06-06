@@ -50,6 +50,9 @@ for stock in stocks:
     # mykf_tmp.Q = mykf_tmp.Basic_Q        
     # mykf_tmp.Alt_Q = 9*mykf_tmp.Q
     mykf_tmp.run()
+    kp.std_sawtooth_plot(fignum=1,kfobj=mykf_tmp,expflag=1, 
+                      last_percent=1,
+                      title_prefix=title_prefix)
     kp.plot_residuals(kfobj=mykf_tmp,expflag=1,
                    title_prefix=title_prefix,
                    legend_str=my_legend_str)
@@ -123,9 +126,9 @@ for i in range(mynumruns):
     tmp_zhat = np.dot(mykf.H,tmp)
     mykf.residual[:,:,i] = tmpz - tmp_zhat
 
-# kp.std_sawtooth_plot(fignum=1,kfobj=mykf,expflag=1, 
-#                      last_percent=1,
-#                      title_prefix=title_prefix)
+kp.std_sawtooth_plot(fignum=1,kfobj=mykf,expflag=1, 
+                      last_percent=1,
+                      title_prefix=title_prefix)
 mykf.exp_residual = np.exp(mykf.residual)
 kp.plot_residuals(kfobj=mykf,expflag=1,
                    title_prefix=title_prefix,

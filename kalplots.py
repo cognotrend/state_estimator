@@ -54,7 +54,7 @@ def std_sawtooth_plot(kfobj,fignum=1,expflag=0,last_percent=0.10,
     ax0=plt.subplot(3,1,1)
     plt.plot(doubletime,sawtooth[0,:])
     plt.setp(ax0.get_xticklabels(), visible=False)
-    plt.title(title_prefix+'Covariance')
+    plt.title(title_prefix+' Covariance')
     
     ax1=plt.subplot(3,1,2,sharex=ax0) 
     plt.plot(doubletime,sawtooth[1,:])

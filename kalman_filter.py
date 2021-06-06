@@ -312,6 +312,7 @@ class KalmanFilter():
         if self.k==0:
             print('\nStart\n')
             print('*************Initialization*******************')
+            print('*************Filter ID: '+self.filter_id+'*******************')
             print('k: ',self.k)
             print('Prior State: (N/A)\n',self.x_minus[:,self.k])
             print('Prior Cov:\n', self.P_minus)
@@ -323,6 +324,7 @@ class KalmanFilter():
             print('**************End Initialization***************')
         else:            
             print('**********************************************')
+            print('*************Filter ID: '+self.filter_id+'*******************')
             print('k: ',self.k)
             print('Prior State:\n',self.x_minus[:,self.k])
             print('Prior Cov:\n', self.P_minus)
