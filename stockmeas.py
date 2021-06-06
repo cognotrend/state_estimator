@@ -20,10 +20,10 @@ class StockMeasurement():
                  ):
         self.subfilters = subfilters
         self.subfilters_list = subfilter_list
+        self.logmode = logmode
+        self.noiseSigma = noiseSigma
         if self.subfilters==False:
             self.num_stocks = len(infiles)
-            self.logmode = logmode
-            self.noiseSigma = noiseSigma
             d_parser = lambda x: dt.datetime.fromisoformat(x)
 
             
@@ -45,9 +45,6 @@ class StockMeasurement():
             self.meas_array = np.zeros((self.num_stocks-1,1))
         else:
             self.next_ts_index = 0
-            self.logmode = logmode
-            self.noiseSigma = noiseSigma
-
             timestamps_list = list(range(0,self.subfilters_list[0].numruns))
             self.ts_indices = list(range(0,self.subfilters_list[0].numruns))
             self.timestamps = []
