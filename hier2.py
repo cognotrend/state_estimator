@@ -134,4 +134,6 @@ kp.plot_residuals(kfobj=mykf,expflag=1,
 #kp.plot_gains(kfobj=mykf,state=0)
 kp.plot_states(kfobj=mykf)
 
+print("\n*************\nEnd simulations\n******************************************\n******************************************\n")
+
 
