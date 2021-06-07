@@ -141,10 +141,14 @@ def plot_gains(kfobj,state=0,fignum=4):
 def plot_states(kfobj,state=0,fignum=4):
     epochs=np.arange(kfobj.numruns)
     fig, axs = plt.subplots(nrows=kfobj.state_size,ncols=1, sharex=True)
+    meas = np.exp(kfobj.z[0,0,:].transpose())
     for i in list(range(0,kfobj.state_size)):
         states = np.exp(kfobj.x_plus[i,:].transpose())
         axs[i].plot(epochs[1:kfobj.numruns],states[1:kfobj.numruns],
                     label='State '+str(i))
+        if i==0:
+            axs[i].plot(epochs[1:kfobj.numruns],meas[1:kfobj.numruns],
+                    label='Measurement '+str(i))
         axs[i].legend(loc='upper left')
 
         if i==0:
