@@ -43,7 +43,7 @@ for stock in stocks:
                         verbose=False,
                         q_factor=q_factor,
                         filter_id=stock,
-                        epoch_dumps=5)
+                        epoch_dumps=-1)
 
     # mykf_tmp.Basic_Q = q_factor * np.array([[0,0,0],
     #                           [0, 0.00027, 0],
@@ -51,17 +51,17 @@ for stock in stocks:
     # mykf_tmp.Q = mykf_tmp.Basic_Q        
     # mykf_tmp.Alt_Q = 9*mykf_tmp.Q
     mykf_tmp.run()
-    kp.std_sawtooth_plot(fignum=1,kfobj=mykf_tmp,expflag=1, 
+    kp.std_sawtooth_plot(fignum=1,kfobj=mykf_tmp,expflag=0, 
                       last_percent=1,
                       title_prefix=title_prefix)
-    kp.plot_residuals(kfobj=mykf_tmp,expflag=1,
+    kp.plot_residuals(kfobj=mykf_tmp,expflag=0,
                    title_prefix=title_prefix,
                    legend_str=my_legend_str)
     kp.plot_states(kfobj=mykf_tmp)
 
     mykfs.append(mykf_tmp)
 
-# Create and use a KF object, but don't actually run it. 
+# Create and use a KF object, but don't actually run it.  
 title_prefix='Std 3-state filter: Weighted Average '
 my_legend_str = ['Weighted Average']
 # This is just a dummy
@@ -80,7 +80,7 @@ mykf = kf.KalmanFilter(meas_obj=mysm,
                        meas_size = len(stocks),
                        dt=1,  # what unit of time?  Daily (1)?, seconds (24*3600)?
                        phi_type=1,
-                       sigma=0.0000001,  # Stock prices are accurately reported
+                       sigma=0.01,  # Stock prices are accurately reported
                        num_runs=mynumruns,
                        logmode=1, 
                        num_blocks=1,
@@ -89,6 +89,8 @@ mykf = kf.KalmanFilter(meas_obj=mysm,
                        verbose=False,
                        filter_id='Composite')
 
+# Since mykf.run() is not called, the following serves to compute all the values of 
+# mykf.x_minus, x_plus, z, zhat.  P_minus_cum, etc. are not actually computed.
 for i in range(mynumruns):
     sum_of_recip = np.zeros((basic_size, 1))
     sum_of_recip_minus = np.zeros((basic_size, 1))
@@ -127,11 +129,13 @@ for i in range(mynumruns):
     tmp_zhat = np.dot(mykf.H,tmp)
     mykf.residual[:,:,i] = tmpz - tmp_zhat
 
-kp.std_sawtooth_plot(fignum=1,kfobj=mykf,expflag=1, 
+# Not an accurate sawtooth, since P_minus_cum, P_plus_cum are not yet set.
+# Need to verify this using debugger.
+kp.std_sawtooth_plot(fignum=1,kfobj=mykf,expflag=0, 
                       last_percent=1,
                       title_prefix=title_prefix)
 mykf.exp_residual = np.exp(mykf.residual)
-kp.plot_residuals(kfobj=mykf,expflag=1,
+kp.plot_residuals(kfobj=mykf,expflag=0,
                    title_prefix=title_prefix,
                    legend_str=my_legend_str)
 #kp.plot_posgains(kfobj=mykf,expflag=1)

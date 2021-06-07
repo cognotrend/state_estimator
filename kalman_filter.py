@@ -87,7 +87,7 @@ class KalmanFilter():
                                                 basic_state_size=self.basic_state_size,
                                                 phi_type=self.phi_type)
         self.Basic_Phi  = self.kstmobj.Phi  #basic size
-        self.Basic_Alt_Phi = self.kstmobj.Alt_Phi
+        self.Basic_Alt_Phi = self.kstmobj.Alt_Phi  # Alt_Phi uses longer dt (currently 1.5)
 
         self.I = np.eye(self.state_size)
 
@@ -175,15 +175,19 @@ class KalmanFilter():
             self.P_minus = np.kron(np.eye(self.num_blocks),self.Basic_P)
         else:
             self.P_minus = self.Basic_P
+
         self.P_minus_cum = np.zeros((self.state_size,self.state_size,self.numruns))
         self.P_minus_cum[:,:,0] = self.P_minus
+
         self.P_plus = self.P_minus
+
         self.P_plus_cum = np.zeros((self.state_size,self.state_size,self.numruns))
         self.P_plus_cum[:,:,0] = self.P_plus
+        
         self.x_minus = np.zeros((self.state_size,self.numruns))
-        self.x_minus[0,0] = self.x_minus[0,0]+np.random.normal(0,self.sigma)
+#        self.x_minus[0,0] = self.x_minus[0,0]+np.random.normal(0,self.sigma)
+
         self.x_plus = np.zeros((self.state_size,self.numruns))
-        self.x_plus[0,0] = self.x_plus[0,0]
         meas_tmp = self.meas_func()
         if meas_tmp.size ==1:
 #            tmp_z = np.zeros((self.meas_size,1))
@@ -213,6 +217,8 @@ class KalmanFilter():
         self.reset()
         rsum=0
         rsumsq = 0
+        rexpsum=0
+        rexpsumsq = 0
         while self.k<self.numruns-1:
             if self.displayflag:
                 self.display()
@@ -220,15 +226,22 @@ class KalmanFilter():
             r = self.residual[0,0,self.k]
             rsum = rsum + r
             rsumsq = rsumsq + r*r
+            rexp = self.exp_residual[0,0,self.k]
+            rexpsum = rexpsum + rexp
+            rexpsumsq = rexpsumsq + rexp*rexp
         self.display()
         avg = rsum/self.numruns
         mse = rsumsq/self.numruns
         rms = math.sqrt(mse)
+        avgexp = rexpsum/self.numruns
+        mseexp = rexpsumsq/self.numruns
+        rmsexp = math.sqrt(mseexp)
         print('Avg residual: ',avg)
-        print('Exponential of Avg residual: ',np.exp(avg))
         print('RMS of residual: ', rms)
+        print('Avg residual of exponentials: ',avgexp)
+        print('RMS of residual of exponentials: ', rmsexp)
 
-        return self.x_plus, self.x_minus, self.residual
+        return self.x_plus, self.x_minus, self.residual, self.exp_residual
 
     def cycle(self):
         self.extrapolate()
@@ -343,7 +356,7 @@ class KalmanFilter():
             print('Kalman Gain:\n',self.K[:,:])
             print('Measurement:\n',self.z[:,0,self.k])
             if self.logmode==1:
-                print('Exponential of Residual:\n',np.exp(self.residual[:,0,self.k]))
+                print('Residual of Exponentials:\n',self.exp_residual[:,0,self.k])
             if self.x_minus[0,self.k] != 0.0:
                 print('Residual as percent of State:\n',(self.residual[:,0,self.k]/self.x_minus[0,self.k])*100,'%')
             print('Posterior State:\n',self.x_plus[:,self.k])

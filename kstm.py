@@ -4,12 +4,13 @@
 # Just dealing with basic_state_size, not ensembling
 import numpy as np
 import math
+alt_factor = 1
 class KalmanStateTransMatrix():
     def __init__(self,dt=1,tau_factor=3,basic_state_size=3,phi_type=0):
 
 # Kalman state transition matrix
         self.dt = dt
-        self.alt_dt = 3*self.dt
+        self.alt_dt = alt_factor*self.dt
         self.phy_type = phi_type
         self.basic_state_size = basic_state_size
         if phi_type==0 and basic_state_size==3:
