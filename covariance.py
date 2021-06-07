@@ -6,11 +6,12 @@ class Covariance():
     '''
     def __init__(self, 
                  size=3, 
-                 sigma1=0.00001, 
-                 sigma2=0.002, 
-                 sigma3=0.004, 
+                 sigma1=2.50, 
+                 sigma2=1.5, 
+                 sigma3=0.5, 
                  rflag=0, 
-                 msg = ''):
+                 msg = '',
+                 verbose=True):
         '''
         Constructor for Covariance class.  Declare object as follows:
         myObject = covariance.Covariance()
@@ -28,6 +29,12 @@ class Covariance():
             self.Cov=np.array([[sigma1**2]],float)
         elif size==3:
             self.Cov = np.diag([sigma1**2,sigma2**2,sigma3**2])
+            if verbose==True:
+                print('Covariance Init: ')
+                print(msg)
+                print('sigma1: ',sigma1)
+                print('sigma2: ',sigma2)
+                print('sigma3: ',sigma3)
         else:
             d=sigma1*np.ones(size)
             self.Cov = np.diag(d)

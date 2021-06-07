@@ -8,7 +8,7 @@ import math
 import datetime
 import kalman_utils as ku
 
-default_numruns=5
+default_numruns=-1
 default_q_factor=.01
 default_meas_noise_sigma=0.1
 default_logmode = 0
@@ -45,9 +45,13 @@ class KalmanFilter():
                  tau_factor=1,
                  basic_state_size=3,
                  meas_size=1,
+                 init_state_val=0.0,
                  meas_obj=None,
                  meas_func=None,
                  sigma=default_meas_noise_sigma,
+                 sigma1=1.0,
+                 sigma2=0.1,
+                 sigma3=0.01,
                  num_blocks=1, # for ensemble of filters
                  composite=False,
                  phi_type=0,ref_model=1, 
@@ -62,17 +66,20 @@ class KalmanFilter():
         '''
         KalmanFilter object constructor
         '''
+        self.sigma1=sigma1
+        self.sigma2=sigma2
+        self.sigma3=sigma3
         self.filter_id = filter_id
         self.epoch_dumps = epoch_dumps
         self.composite = composite
         self.logmode = logmode
-        self.numruns = num_runs
         self.displayflag = displayflag
         self.verbose = verbose
 # Set up Process Model (should be object):
         self.dt = dt
         self.phi_type = phi_type
         self.tau_factor = tau_factor
+        self.init_state_val = init_state_val
 
         self.num_blocks = num_blocks
         self.basic_state_size = basic_state_size
@@ -131,6 +138,14 @@ class KalmanFilter():
         self.sigma = sigma
         self.num_blocks = num_blocks
         self.ref_model = ref_model
+        if num_runs == -1:
+            if meas_obj != None:
+                self.numruns = meas_obj.num_meas-1
+            else:
+                self.numruns = default_numruns
+        else:
+            self.numruns = num_runs
+          
         
         self.z = np.zeros((self.meas_size,1,self.numruns))
         self.zhat = np.zeros((self.meas_size,1,self.numruns))
@@ -153,8 +168,9 @@ class KalmanFilter():
             
 
         self.Basic_P = cov.Covariance(size=self.basic_state_size,
-#                                      sigma1=1.0,
-#                                    sigma2=0.2,sigma3=0.04,
+                                       sigma1=self.sigma1,
+                                       sigma2=self.sigma2,
+                                       sigma3=self.sigma3,
                                     msg='Initial P_minus covariance matrix.').Cov
         if self.num_blocks>1:
             self.P_minus = np.kron(np.eye(self.num_blocks),self.Basic_P)
@@ -168,9 +184,10 @@ class KalmanFilter():
 
     def reset(self):
         self.Basic_P = cov.Covariance(size=self.basic_state_size,
-#                                      sigma1=1.0,
-#                                    sigma2=0.2,sigma3=0.04,
-                                    msg='Initial P_minus covariance matrix.').Cov
+                                       sigma1=self.sigma1,
+                                       sigma2=self.sigma2,
+                                       sigma3=self.sigma3,
+                                    msg='Reset P_minus covariance matrix.').Cov
         if self.num_blocks>1:
             self.P_minus = np.kron(np.eye(self.num_blocks),self.Basic_P)
         else:
@@ -192,7 +209,10 @@ class KalmanFilter():
         if meas_tmp.size ==1:
 #            tmp_z = np.zeros((self.meas_size,1))
 #            tmp_z[0]=meas_tmp
-            self.x_plus[0,0] = meas_tmp[0,0]+np.random.normal(0,self.sigma)
+            if self.init_state_val==0:
+                self.x_plus[0,0] = meas_tmp[0,0]+np.random.normal(0,self.sigma)
+            else:
+                self.x_plus[0,0] = self.init_state_val
         else:
             if self.num_blocks>1:
                 self.x_plus[:,0] = np.zeros((self.state_size,))
@@ -226,20 +246,23 @@ class KalmanFilter():
             r = self.residual[0,0,self.k]
             rsum = rsum + r
             rsumsq = rsumsq + r*r
-            rexp = self.exp_residual[0,0,self.k]
-            rexpsum = rexpsum + rexp
-            rexpsumsq = rexpsumsq + rexp*rexp
+            if self.logmode==1:
+                rexp = self.exp_residual[0,0,self.k]
+                rexpsum = rexpsum + rexp
+                rexpsumsq = rexpsumsq + rexp*rexp
         self.display()
         avg = rsum/self.numruns
         mse = rsumsq/self.numruns
         rms = math.sqrt(mse)
-        avgexp = rexpsum/self.numruns
-        mseexp = rexpsumsq/self.numruns
-        rmsexp = math.sqrt(mseexp)
+        if self.logmode==1:
+            avgexp = rexpsum/self.numruns
+            mseexp = rexpsumsq/self.numruns
+            rmsexp = math.sqrt(mseexp)
         print('Avg residual: ',avg)
         print('RMS of residual: ', rms)
-        print('Avg residual of exponentials: ',avgexp)
-        print('RMS of residual of exponentials: ', rmsexp)
+        if self.logmode==1:
+            print('Avg residual of exponentials: ',avgexp)
+            print('RMS of residual of exponentials: ', rmsexp)
 
         return self.x_plus, self.x_minus, self.residual, self.exp_residual
 
@@ -267,14 +290,19 @@ class KalmanFilter():
         if self.verbose or self.k==self.epoch_dumps:
             print('Extrap: Phi @ epoch '+str(self.k)+':')
             print(TempPhi)
-            print('Extrap: Pos Definite? '+str(ku.is_pos_def(self.P_plus)))
+            print('Extrap: Prior P is Pos Definite? '+str(ku.is_pos_def(self.P_plus)))
         if self.verbose or self.k==self.epoch_dumps:
-            print('Cov before Extrap:')
+            print('Extrap: Prior P: ')
             print(self.P_minus)
+            print('Extrap: Prior x: ')
+            print(self.x_plus[:,self.k-1])
 
 # State Extrapolation:
 #        self.x_minus[:,self.k] = np.dot(self.Phi,self.x_plus[:,self.k-1])
         self.x_minus[:,self.k] = TempPhi @ self.x_plus[:,self.k-1]
+        if self.verbose or self.k==self.epoch_dumps:
+            print('Extrap: Predicted x: ')
+            print(self.x_minus[:,self.k])
 
 # Covariance Extrapoloation:
 #        self.P_minus = np.dot(self.Phi,np.dot(self.P_plus,self.Phi.transpose())) + self.Q
@@ -307,7 +335,7 @@ class KalmanFilter():
             print('PH_transpose:')
             print(PH_trans)
             print('Kalman Gain:')
-            print(self.K[:,:,self.k])
+            print(self.K_cum[:,:,self.k])
 
     def update(self):
         # Update Covariance
@@ -318,6 +346,8 @@ class KalmanFilter():
         self.P_plus_cum[:,:,self.k] = self.P_plus
         if self.verbose:
             print('Update: Pos Definite? '+str(ku.is_pos_def(self.P_plus)))
+            print('Update: Corrected P: ')
+            print(self.P_plus)
         meas_tmp = self.meas_func()
 #        print('meas_tmp shape: ' + str(meas_tmp.shape))
         if self.num_blocks>1:
@@ -329,6 +359,14 @@ class KalmanFilter():
         self.exp_residual[:,0,self.k] = np.exp(self.z[:,0,self.k]) - np.exp(self.zhat[:,0,self.k])
         weighted_residual = np.dot(self.K[:,:],self.residual[:,0,self.k])
         self.x_plus[:,self.k] = self.x_minus[:,self.k] + weighted_residual
+        if self.verbose:
+            print('Update: Measurement')
+            print(self.z[:,0,self.k])
+            print('Update:  Corrected state: ')
+            print(self.x_plus[:,self.k])
+            print('Update: Residual: ')
+            print(self.residual[:,0,self.k])
+
 #        new_state = self.x_plus[:,self.k]
 #        print(new_state)
         

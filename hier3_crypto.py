@@ -1,3 +1,20 @@
+'''
+    File name: hier3_crypto.py
+    Author: Michael Carroll
+    Date created: 06/07/2021
+    Date last modified: 6/07/2021
+    Python Version: 3.7.6
+    Description:  Test Driver for stockmeas and KalmanFilter objects.
+    4-crypto scenario.
+    Current Issues:  
+    2021-06-07:  Works with stocks.  Also works with four copies of BTC data file, but the .csv file
+    downloaded from alphavantage had to wrangled:  1)  Redundant USD columns removed and 2) Had to remove '  (USD)' from
+    open, close, etc. column headers.
+    AttributeError: NoneType object has no attribute timestamps
+    TODO:
+    Make clone to work with crypto currency
+    Create tool to modify .csv files to put cryptos into needed format.                                                                                                      
+'''
 import kalman_filter as kf
 import stockmeas as sm
 import kalplots as kp
@@ -15,15 +32,15 @@ import json
 mynumruns =100
 # stocks = ['IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT','IBM','AMZN','GE','MSFT']
 # q_factors = [.1,1.0,10.0,100.0,.2,.2,.2,.2,.3,.3,.3,.3,.4,.4,.4,.4]
-stocks = ['IBM','GE','MSFT']
+stocks = ['BTC_USD','ETH_USD','DOT_USD']
 q_factors = [1.0,1.0,1.0]
 mykfs = []
 i=0
 for stock in stocks:
-    infiles=['daily_adjusted_'+stock+'.csv']
+    infiles=['currency_daily_'+stock+'.csv']
     title_prefix='Std 3-state filter: '+stock
     my_legend_str = [stock]
-    mysm_tmp = sm.StockMeasurement(noiseSigma=10, # added measurement noise
+    mysm_tmp = sm.StockMeasurement(noiseSigma=0, # added measurement noise
                             logmode=1,
                             infiles=infiles
                             )
@@ -35,7 +52,7 @@ for stock in stocks:
                         meas_size = 1,
                         dt=1,  # what unit of time?  Daily (1)?, seconds (24*3600)?
                         phi_type=1,
-                        sigma=5.0,  # BTC prices are accurately reported
+                        sigma=1.0,  # Stock prices are accurately reported
                         num_runs=mynumruns,
                         logmode=1, 
                         num_blocks=1,
@@ -57,7 +74,8 @@ for stock in stocks:
     kp.plot_residuals(kfobj=mykf_tmp,expflag=0,
                    title_prefix=title_prefix,
                    legend_str=my_legend_str)
-      
+    kp.plot_states(kfobj=mykf_tmp)
+
     mykfs.append(mykf_tmp)
 
 # Create and use a KF object, but don't actually run it.  

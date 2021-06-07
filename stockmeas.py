@@ -8,6 +8,7 @@ import random
 TODO:
     1) Add processing of multiple stocks if num stocks >1  Done
     2) Ensure default of a single direct measurement if num stocks =1
+    3) Handle JSON files
 '''
 class StockMeasurement():
     def __init__(self,
@@ -37,6 +38,7 @@ class StockMeasurement():
                 self.dfs.append(df)
                 
             self.timestamps = self.dfs[0].index
+            self.num_meas = len(self.timestamps)
             
             self.myiter = iter(self.timestamps)
                 

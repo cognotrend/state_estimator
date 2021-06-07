@@ -1,3 +1,18 @@
+'''
+    File name: init1.py
+    Author: Michael Carroll
+    Date created: 12/10/2020
+    Date last modified: 6/07/2021
+    Python Version: 3.7.6
+    Description:  Class def for Measurement object.  To handle JSON types.
+    Can produce output such as meas.txt:
+    
+    Current Issues:  
+    2021-06-07:  Incomplete.  
+    TODO:
+    Make clone to work with crypto currency JSON files.
+'''
+
 import numpy as np
 import datetime as dt
 import pandas as pd
