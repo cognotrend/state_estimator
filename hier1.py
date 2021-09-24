@@ -3,7 +3,7 @@ import stockmeas as sm
 import kalplots as kp
 import numpy as np
 import json
-
+#  Currently broken (2021-09-23).  Try hier2.py for a working example.
 # IBM
 # mean:	0.00004333	-0.00000029
 # variance:	0.00027046	0.00056898
